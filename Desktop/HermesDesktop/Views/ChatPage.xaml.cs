@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using HermesDesktop.Models;
 using HermesDesktop.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,7 +21,7 @@ public sealed partial class ChatPage : Page
 {
     private static readonly ResourceLoader ResourceLoader = new();
 
-    private readonly HermesChatService _chatService = new();
+    private readonly HermesChatService _chatService = App.Services.GetRequiredService<HermesChatService>();
     private readonly Brush _assistantBackgroundBrush;
     private readonly Brush _assistantBorderBrush;
     private readonly Brush _userBackgroundBrush;
@@ -121,16 +123,10 @@ public sealed partial class ChatPage : Page
 
     private async Task SendPromptAsync()
     {
-        if (_isBusy)
-        {
-            return;
-        }
+        if (_isBusy) return;
 
         string prompt = PromptTextBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(prompt))
-        {
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(prompt)) return;
 
         PromptTextBox.Text = string.Empty;
         AppendUserMessage(prompt);
@@ -138,12 +134,30 @@ public sealed partial class ChatPage : Page
 
         try
         {
-            var reply = await _chatService.SendAsync(prompt, CancellationToken.None);
-            AppendAssistantMessage(reply.Response);
+            // Create streaming placeholder
+            var streamingItem = AddVisualMessage(
+                ResourceLoader.GetString("ChatAssistantLabel"),
+                "",
+                HorizontalAlignment.Left,
+                _assistantBackgroundBrush,
+                _assistantBorderBrush,
+                _secondaryLabelBrush);
+            streamingItem.IsStreaming = true;
+
+            // Stream tokens
+            await foreach (var token in _chatService.StreamAsync(prompt, CancellationToken.None))
+            {
+                streamingItem.AppendToken(token);
+                MessagesList.ScrollIntoView(streamingItem);
+            }
+
+            streamingItem.IsStreaming = false;
             _connectionState = ResourceLoader.GetString("StatusConnected");
             _composerStatus = ResourceLoader.GetString("ChatComposerReady");
-            
-            // UI data will be updated as pillars are integrated
+        }
+        catch (OperationCanceledException)
+        {
+            AppendSystemMessage("Generation cancelled.");
         }
         catch (Exception ex)
         {
@@ -228,18 +242,21 @@ public sealed partial class ChatPage : Page
             _secondaryLabelBrush);
     }
 
-    private void AddVisualMessage(
+    private ChatMessageItem AddVisualMessage(
         string authorLabel,
         string content,
         HorizontalAlignment alignment,
         Brush background,
         Brush borderBrush,
-        Brush labelBrush)
+        Brush labelBrush,
+        ChatMessageType messageType = ChatMessageType.Text,
+        List<ToolCallInfo>? toolCalls = null)
     {
-        ChatMessageItem item = new(authorLabel, content, alignment, background, borderBrush, labelBrush);
+        var item = new ChatMessageItem(authorLabel, content, alignment, background, borderBrush, labelBrush, messageType, toolCalls);
         Messages.Add(item);
         MessagesList.ScrollIntoView(item);
         Bindings.Update();
+        return item;
     }
 
     private static Brush GetBrush(string resourceKey)
