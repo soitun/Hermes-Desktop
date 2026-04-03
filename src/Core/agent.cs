@@ -111,7 +111,7 @@ public sealed class Agent : IAgent
 
         try
         {
-            var parameters = JsonSerializer.Deserialize(toolCall.Arguments, tool.ParametersType)
+            var parameters = JsonSerializer.Deserialize(toolCall.Arguments, tool.ParametersType, ToolArgJsonOptions)
                 ?? throw new JsonException($"Failed to deserialize arguments for {toolCall.Name}");
             return await tool.ExecuteAsync(parameters, ct);
         }
@@ -166,6 +166,11 @@ public sealed class Agent : IAgent
         var json = JsonSerializer.Serialize(schema);
         return JsonDocument.Parse(json).RootElement.Clone();
     }
+
+    private static readonly JsonSerializerOptions ToolArgJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     private static string ToCamelCase(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];

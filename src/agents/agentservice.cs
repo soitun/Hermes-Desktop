@@ -71,7 +71,7 @@ public sealed class AgentService
                 AllowedTools = request.AllowedTools
             };
 
-            var runner = new AgentRunner(context, _chatClient, _loggerFactory.CreateLogger<AgentRunner>());
+            var runner = new AgentRunner(context, _chatClient, _loggerFactory.CreateLogger<AgentRunner>(), _loggerFactory);
 
             if (request.RunInBackground)
             {
@@ -161,7 +161,7 @@ public sealed class AgentService
                 // Git clone is more efficient for git repos
                 var repoUrl = await GetGitRemoteUrlAsync(ct);
                 if (repoUrl is not null)
-                    await RunSshAsync(remote, $"cd {remoteDir} && git clone {repoUrl} . 2>/dev/null || true", ct);
+                    await RunSshAsync(remote, $"cd {remoteDir} && git clone {repoUrl} .", ct);
                 else
                     await RunScpAsync(remote, localWorkspace, remoteDir, ct);
             }
@@ -271,12 +271,14 @@ public sealed class AgentRunner
     private readonly AgentContext _context;
     private readonly IChatClient _chatClient;
     private readonly ILogger<AgentRunner> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
-    public AgentRunner(AgentContext context, IChatClient chatClient, ILogger<AgentRunner> logger)
+    public AgentRunner(AgentContext context, IChatClient chatClient, ILogger<AgentRunner> logger, ILoggerFactory loggerFactory)
     {
         _context = context;
         _chatClient = chatClient;
         _logger = logger;
+        _loggerFactory = loggerFactory;
     }
 
     public async Task<AgentResult> RunAsync(CancellationToken ct)
@@ -285,10 +287,7 @@ public sealed class AgentRunner
 
         try
         {
-            // Create agent instance with tool execution loop
-            var agent = new Core.Agent(_chatClient, _logger as ILogger<Core.Agent>
-                ?? Microsoft.Extensions.Logging.LoggerFactoryExtensions.CreateLogger<Core.Agent>(
-                    new LoggerFactory()));
+            var agent = new Core.Agent(_chatClient, _loggerFactory.CreateLogger<Core.Agent>());
 
             // Register allowed tools
             if (_context.AllowedTools is not null)

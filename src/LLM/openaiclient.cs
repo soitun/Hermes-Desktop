@@ -152,7 +152,7 @@ public sealed class OpenAiClient : IChatClient
                 };
 
             // Regular message
-            return new { role = m.Role, content = m.Content, tool_calls = (object?)null };
+            return (object)new { role = m.Role, content = m.Content };
         }).ToArray();
 
         if (tools is not null)

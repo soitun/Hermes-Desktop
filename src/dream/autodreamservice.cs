@@ -118,8 +118,8 @@ public sealed class AutoDreamService : BackgroundService
             var messages = await _transcriptStore.LoadSessionAsync(id, ct);
             if (messages.Count == 0) continue;
 
-            var firstTimestamp = messages[0].Timestamp;
-            if (firstTimestamp > _lastConsolidation)
+            var lastTimestamp = messages[^1].Timestamp;
+            if (lastTimestamp > _lastConsolidation)
             {
                 sessions.Add(new DreamSession { Id = id, Messages = messages });
             }
@@ -314,6 +314,7 @@ Brief summary of what was consolidated.";
                 var content = ExtractField(block, "CONTENT");
 
                 if (filename is null || content is null) continue;
+                if (!IsSafeMemoryPath(filename)) { _logger.LogWarning("Dream: rejected unsafe filename {Filename}", filename); continue; }
 
                 var frontmatter = $"---\nname: {filename.Replace(".md", "")}\ndescription: {description ?? "auto-consolidated"}\ntype: {type ?? "project"}\n---\n\n";
                 var path = Path.Combine(_memoryDir, filename);
@@ -333,11 +334,11 @@ Brief summary of what was consolidated.";
                 var filename = ExtractField(block, "FILENAME");
                 var content = ExtractField(block, "CONTENT");
                 if (filename is null || content is null) continue;
+                if (!IsSafeMemoryPath(filename)) { _logger.LogWarning("Dream: rejected unsafe filename {Filename}", filename); continue; }
 
                 var path = Path.Combine(_memoryDir, filename);
                 if (File.Exists(path))
                 {
-                    // Preserve frontmatter, update body
                     var existing = await File.ReadAllTextAsync(path, ct);
                     var endIdx = existing.IndexOf("---", 3);
                     var frontmatter = endIdx > 0 ? existing[..(endIdx + 3)] + "\n\n" : "";
@@ -356,6 +357,8 @@ Brief summary of what was consolidated.";
             {
                 var filename = line.TrimStart('-', ' ');
                 if (string.IsNullOrWhiteSpace(filename)) continue;
+                if (!IsSafeMemoryPath(filename)) { _logger.LogWarning("Dream: rejected unsafe filename {Filename}", filename); continue; }
+
                 var path = Path.Combine(_memoryDir, filename);
                 if (File.Exists(path))
                 {
@@ -367,6 +370,19 @@ Brief summary of what was consolidated.";
         }
 
         _logger.LogInformation("Dream consolidation applied {Count} changes", changeCount);
+    }
+
+    /// <summary>Reject filenames with path traversal or absolute paths.</summary>
+    private bool IsSafeMemoryPath(string filename)
+    {
+        if (string.IsNullOrWhiteSpace(filename)) return false;
+        if (filename.Contains("..") || filename.Contains('/') || filename.Contains('\\')) return false;
+        if (Path.IsPathRooted(filename)) return false;
+
+        // Verify resolved path stays under _memoryDir
+        var resolved = Path.GetFullPath(Path.Combine(_memoryDir, filename));
+        var memoryDirFull = Path.GetFullPath(_memoryDir);
+        return resolved.StartsWith(memoryDirFull, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? ExtractSection(string text, string header, string nextHeaderPrefix)

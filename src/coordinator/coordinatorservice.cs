@@ -330,7 +330,7 @@ Provide a unified, coherent summary of everything that was accomplished. Highlig
     private static List<Subtask> ParseSubtasks(string response)
     {
         // Extract JSON array from response (may be wrapped in markdown code block)
-        var jsonMatch = Regex.Match(response, @"\[[\s\S]*\]");
+        var jsonMatch = Regex.Match(response, @"\[[\s\S]*?\]");
         if (!jsonMatch.Success) return [];
 
         try
