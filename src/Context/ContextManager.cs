@@ -90,17 +90,20 @@ public sealed class ContextManager
                 "Context budget: {Total}/{Max} tokens ({Pressure}), {Recent} recent, {Evicted} evicted",
                 totalTokens, _budget.MaxTokens, pressure, recentTurns.Count, evictedMessages.Count);
 
-            // Summarize evicted messages if we have any and need to
-            if (evictedMessages.Count > 0 && pressure >= BudgetPressure.High)
+            // Summarize evicted messages only when the summary is behind the current turn
+            var needsSummary = evictedMessages.Count > 0
+                && state.Summary.CoveredThroughTurn < state.TurnCount;
+
+            if (needsSummary && pressure >= BudgetPressure.High)
             {
                 await SummarizeEvictedAsync(state, evictedMessages, ct);
             }
-            else if (evictedMessages.Count > 0 && string.IsNullOrEmpty(state.Summary.Content))
+            else if (needsSummary && string.IsNullOrEmpty(state.Summary.Content))
             {
                 // First time we evict messages — create initial summary
                 await SummarizeEvictedAsync(state, evictedMessages, ct);
             }
-            else if (evictedMessages.Count > 0 && IsSummaryStaleBeyond(state, turnsStalenessThreshold: 10))
+            else if (needsSummary && IsSummaryStaleBeyond(state, turnsStalenessThreshold: 10))
             {
                 // Summary is stale — re-summarize to capture recent evictions
                 await SummarizeEvictedAsync(state, evictedMessages, ct);
