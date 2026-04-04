@@ -55,7 +55,10 @@ public sealed class ReadFileTool : ITool
             
             // Format with line numbers (cat -n style)
             var output = string.Join("\n", selectedLines.Select((line, i) => $"{start + i + 1,6}: {line}"));
-            
+
+            // Record read timestamp for stale file detection
+            FileReadTracker.RecordRead(filePath);
+
             return Task.FromResult(ToolResult.Ok(output));
         }
         catch (Exception ex)

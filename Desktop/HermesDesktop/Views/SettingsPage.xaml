@@ -45,10 +45,15 @@
                                 <TextBlock Text="PROVIDER" Style="{StaticResource LabelTextStyle}"/>
                                 <ComboBox x:Name="ProviderCombo" HorizontalAlignment="Stretch"
                                           Background="{StaticResource AppInsetBrush}"
-                                          BorderBrush="{StaticResource AppStrokeBrush}">
+                                          BorderBrush="{StaticResource AppStrokeBrush}"
+                                          SelectionChanged="ProviderCombo_SelectionChanged">
+                                    <ComboBoxItem Content="Nous (OpenRouter)" Tag="nous"/>
                                     <ComboBoxItem Content="OpenAI" Tag="openai"/>
                                     <ComboBoxItem Content="Anthropic" Tag="anthropic"/>
-                                    <ComboBoxItem Content="Custom / Local" Tag="custom"/>
+                                    <ComboBoxItem Content="DeepSeek" Tag="deepseek"/>
+                                    <ComboBoxItem Content="MiniMax" Tag="minimax"/>
+                                    <ComboBoxItem Content="OpenRouter" Tag="openrouter"/>
+                                    <ComboBoxItem Content="Custom / Local" Tag="local"/>
                                 </ComboBox>
                             </StackPanel>
 
@@ -61,13 +66,20 @@
                                          Foreground="White"/>
                             </StackPanel>
 
-                            <!-- Model -->
+                            <!-- Model Picker -->
                             <StackPanel Spacing="4">
                                 <TextBlock Text="MODEL" Style="{StaticResource LabelTextStyle}"/>
-                                <TextBox x:Name="ModelBox" PlaceholderText="gpt-4o / claude-sonnet-4-20250514 / local-model"
+                                <ComboBox x:Name="ModelCombo" HorizontalAlignment="Stretch"
+                                          Background="{StaticResource AppInsetBrush}"
+                                          BorderBrush="{StaticResource AppStrokeBrush}"
+                                          SelectionChanged="ModelCombo_SelectionChanged"/>
+                                <TextBox x:Name="ModelBox" PlaceholderText="Or type a custom model ID"
                                          Background="{StaticResource AppInsetBrush}"
                                          BorderBrush="{StaticResource AppStrokeBrush}"
                                          Foreground="White"/>
+                                <TextBlock x:Name="ContextLengthLabel" FontSize="12"
+                                           Foreground="{StaticResource AppTextSecondaryBrush}"
+                                           Text="Context: --"/>
                             </StackPanel>
 
                             <!-- API Key -->

@@ -2,6 +2,7 @@ namespace Hermes.Agent.Core;
 
 using Hermes.Agent.LLM;
 using Hermes.Agent.Permissions;
+using Hermes.Agent.Security;
 using Hermes.Agent.Transcript;
 using Hermes.Agent.Memory;
 using Hermes.Agent.Context;
@@ -22,6 +23,13 @@ public sealed class Agent : IAgent
 
     /// <summary>Safety limit to prevent infinite tool loops.</summary>
     public int MaxToolIterations { get; set; } = 25;
+
+    /// <summary>
+    /// Optional callback for interactive permission prompts.
+    /// When PermissionBehavior.Ask is returned, this callback is invoked with (toolName, message).
+    /// Returns true to allow, false to deny. If null, Ask defaults to deny.
+    /// </summary>
+    public Func<string, string, Task<bool>>? PermissionPromptCallback { get; set; }
 
     public Agent(
         IChatClient chatClient,
@@ -195,19 +203,36 @@ public sealed class Agent : IAgent
 
                         if (decision.Behavior == PermissionBehavior.Ask)
                         {
-                            // For now, treat "ask" as deny with explanation
-                            // In the future, this would prompt the user via UI
-                            var askMsg = new Message
+                            var permissionMessage = decision.Message ?? "This operation requires permission";
+                            bool allowed = false;
+
+                            if (PermissionPromptCallback is not null)
                             {
-                                Role = "tool",
-                                Content = $"Permission required (user approval needed): {decision.Message ?? "This operation requires permission"}",
-                                ToolCallId = toolCall.Id,
-                                ToolName = toolCall.Name
-                            };
-                            session.AddMessage(askMsg);
-                            if (_transcripts is not null)
-                                await _transcripts.SaveMessageAsync(session.Id, askMsg, ct);
-                            continue;
+                                try
+                                {
+                                    allowed = await PermissionPromptCallback(toolCall.Name, permissionMessage);
+                                }
+                                catch (Exception promptEx)
+                                {
+                                    _logger.LogWarning(promptEx, "Permission prompt callback failed, denying");
+                                }
+                            }
+
+                            if (!allowed)
+                            {
+                                var askMsg = new Message
+                                {
+                                    Role = "tool",
+                                    Content = $"Permission denied by user: {permissionMessage}",
+                                    ToolCallId = toolCall.Id,
+                                    ToolName = toolCall.Name
+                                };
+                                session.AddMessage(askMsg);
+                                if (_transcripts is not null)
+                                    await _transcripts.SaveMessageAsync(session.Id, askMsg, ct);
+                                continue;
+                            }
+                            // User approved — fall through to execute the tool
                         }
                     }
                     catch (Exception ex)
@@ -218,10 +243,19 @@ public sealed class Agent : IAgent
 
                 _logger.LogInformation("Executing tool {ToolName} (call {CallId})", toolCall.Name, toolCall.Id);
                 var result = await ExecuteToolCallAsync(toolCall, ct);
+
+                // ── Secret exfiltration scan ──
+                var resultContent = result.Content;
+                if (SecretScanner.ContainsSecrets(resultContent))
+                {
+                    _logger.LogWarning("Secrets detected in tool result from {ToolName}, redacting", toolCall.Name);
+                    resultContent = SecretScanner.RedactSecrets(resultContent);
+                }
+
                 var toolResultMsg = new Message
                 {
                     Role = "tool",
-                    Content = result.Content,
+                    Content = resultContent,
                     ToolCallId = toolCall.Id,
                     ToolName = toolCall.Name
                 };

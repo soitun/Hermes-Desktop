@@ -1,6 +1,7 @@
 namespace Hermes.Agent.Tools;
 
 using Hermes.Agent.Core;
+using Hermes.Agent.Security;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -32,6 +33,12 @@ public sealed class WebFetchTool : ITool
         
         try
         {
+            // Check for embedded credentials in URL
+            if (SecretScanner.UrlContainsCredentials(p.Url))
+            {
+                return ToolResult.Fail("URL contains embedded credentials. Remove credentials from the URL before fetching.");
+            }
+
             // Validate URL for SSRF
             var validationResult = await _ssrfGuard.ValidateAsync(p.Url, ct);
             if (!validationResult.IsValid)

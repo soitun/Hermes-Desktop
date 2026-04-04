@@ -23,17 +23,36 @@ public sealed class WriteFileTool : ITool
         try
         {
             var exists = File.Exists(filePath);
-            
+
+            // Check for stale file content before writing
+            var staleWarning = FileReadTracker.CheckStaleness(filePath);
+
+            // Read old content for diff if file exists
+            string? oldContent = null;
+            if (exists)
+            {
+                try { oldContent = await File.ReadAllTextAsync(filePath, ct); }
+                catch { /* best-effort */ }
+            }
+
             // Create directory if needed
             var dir = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
-            
+
             // Write file
             await File.WriteAllTextAsync(filePath, content, ct);
-            
+
+            // Update tracker so consecutive writes don't trigger false warnings
+            FileReadTracker.UpdateAfterWrite(filePath);
+
+            // Generate inline diff if we had old content
+            var diff = oldContent is not null
+                ? DiffHelper.UnifiedDiff(oldContent, content, Path.GetFileName(filePath))
+                : null;
+
             // Generate structured output
             var result = new
             {
@@ -41,9 +60,11 @@ public sealed class WriteFileTool : ITool
                 action = exists ? "overwrote" : "created",
                 path = filePath,
                 lines = content.Split('\n').Length,
+                _warning = staleWarning,
+                diff = diff,
                 structured_patch = GeneratePatch(filePath, content)
             };
-            
+
             return ToolResult.Ok(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex)

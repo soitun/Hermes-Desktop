@@ -44,6 +44,83 @@ internal static class HermesEnvironment
         ApiKey = ModelApiKey ?? ""
     };
 
+    /// <summary>
+    /// Load credential pool from config.yaml credential_pool: section.
+    /// Returns null if no pool is configured.
+    /// Expected format:
+    ///   credential_pool:
+    ///     strategy: least_used
+    ///     keys:
+    ///       - sk-key1
+    ///       - sk-key2
+    /// </summary>
+    internal static Hermes.Agent.LLM.CredentialPool? LoadCredentialPool()
+    {
+        if (!File.Exists(HermesConfigPath))
+            return null;
+
+        bool inPoolSection = false;
+        bool inKeysSection = false;
+        var keys = new List<string>();
+        string strategy = "least_used";
+
+        foreach (string rawLine in File.ReadLines(HermesConfigPath))
+        {
+            string line = rawLine.TrimEnd();
+            if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#", StringComparison.Ordinal))
+                continue;
+
+            // Top-level section detection
+            if (!char.IsWhiteSpace(rawLine, 0) && line.EndsWith(":", StringComparison.Ordinal))
+            {
+                inPoolSection = string.Equals(line, "credential_pool:", StringComparison.OrdinalIgnoreCase);
+                inKeysSection = false;
+                continue;
+            }
+
+            if (!inPoolSection) continue;
+
+            string trimmed = line.Trim();
+
+            if (trimmed.StartsWith("strategy:", StringComparison.OrdinalIgnoreCase))
+            {
+                strategy = trimmed["strategy:".Length..].Trim().Trim('"', '\'');
+                continue;
+            }
+
+            if (trimmed == "keys:")
+            {
+                inKeysSection = true;
+                continue;
+            }
+
+            if (inKeysSection && trimmed.StartsWith("- ", StringComparison.Ordinal))
+            {
+                var key = trimmed[2..].Trim().Trim('"', '\'');
+                if (!string.IsNullOrEmpty(key))
+                    keys.Add(key);
+            }
+        }
+
+        if (keys.Count == 0) return null;
+
+        var pool = new Hermes.Agent.LLM.CredentialPool
+        {
+            Strategy = strategy.ToLowerInvariant() switch
+            {
+                "round_robin" => Hermes.Agent.LLM.PoolStrategy.RoundRobin,
+                "random" => Hermes.Agent.LLM.PoolStrategy.Random,
+                "fill_first" => Hermes.Agent.LLM.PoolStrategy.FillFirst,
+                _ => Hermes.Agent.LLM.PoolStrategy.LeastUsed
+            }
+        };
+
+        foreach (var key in keys)
+            pool.Add(key);
+
+        return pool;
+    }
+
     internal static bool TelegramConfigured => HasEnvironmentVariable("TELEGRAM_BOT_TOKEN");
 
     internal static bool DiscordConfigured => HasEnvironmentVariable("DISCORD_BOT_TOKEN");

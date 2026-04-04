@@ -10,18 +10,20 @@ public sealed class OpenAiClient : IChatClient
 {
     private readonly HttpClient _httpClient;
     private readonly LlmConfig _config;
+    private readonly CredentialPool? _credentialPool;
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
-    public OpenAiClient(LlmConfig config, HttpClient httpClient)
+    public OpenAiClient(LlmConfig config, HttpClient httpClient, CredentialPool? credentialPool = null)
     {
         _config = config;
         _httpClient = httpClient;
+        _credentialPool = credentialPool;
 
-        if (!string.IsNullOrEmpty(config.ApiKey))
+        if (_credentialPool is null && !string.IsNullOrEmpty(config.ApiKey))
         {
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.ApiKey);
@@ -180,10 +182,43 @@ public sealed class OpenAiClient : IChatClient
     private async Task<HttpResponseMessage> PostAsync(object payload, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(payload);
+        var url = $"{_config.BaseUrl}/chat/completions";
+
+        // If credential pool is available, use it with retry on 401
+        if (_credentialPool is not null && _credentialPool.HasHealthyCredentials)
+        {
+            const int maxRetries = 3;
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                var apiKey = _credentialPool.GetNext();
+                if (apiKey is null) break;
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+                var response = await _httpClient.SendAsync(request, ct);
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                    response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    _credentialPool.MarkFailed(apiKey);
+                    response.Dispose();
+                    continue; // Retry with next key
+                }
+
+                response.EnsureSuccessStatusCode();
+                return response;
+            }
+        }
+
+        // Fallback: use default header auth
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync($"{_config.BaseUrl}/chat/completions", content, ct);
-        response.EnsureSuccessStatusCode();
-        return response;
+        var fallbackResponse = await _httpClient.PostAsync(url, content, ct);
+        fallbackResponse.EnsureSuccessStatusCode();
+        return fallbackResponse;
     }
 
     public async IAsyncEnumerable<StreamEvent> StreamAsync(

@@ -27,7 +27,10 @@ public sealed class EditFileTool : ITool
             {
                 return ToolResult.Fail($"File not found: {filePath}");
             }
-            
+
+            // Check for stale file content before editing
+            var staleWarning = FileReadTracker.CheckStaleness(filePath);
+
             var content = await File.ReadAllTextAsync(filePath, ct);
             
             // Find occurrences
@@ -52,10 +55,23 @@ public sealed class EditFileTool : ITool
             
             // Write back
             await File.WriteAllTextAsync(filePath, newContent, ct);
-            
-            // Generate diff
+
+            // Update tracker so consecutive edits don't trigger false warnings
+            FileReadTracker.UpdateAfterWrite(filePath);
+
+            // Generate inline unified diff
+            var inlineDiff = DiffHelper.UnifiedDiff(content, newContent, Path.GetFileName(filePath));
+
+            // Generate summary diff
             var diff = GenerateDiff(filePath, oldString, newString, occurrences);
-            
+
+            // Prepend stale warning if detected
+            if (staleWarning is not null)
+                diff = staleWarning + "\n\n" + diff;
+
+            // Append inline diff
+            diff += "\n\n" + inlineDiff;
+
             return ToolResult.Ok(diff);
         }
         catch (Exception ex)

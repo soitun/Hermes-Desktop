@@ -14,25 +14,27 @@ public sealed class AnthropicClient : IChatClient
 {
     private readonly HttpClient _httpClient;
     private readonly LlmConfig _config;
-    
+    private readonly CredentialPool? _credentialPool;
+
     private const string ApiVersion = "2023-06-01";
-    
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
     };
-    
-    public AnthropicClient(LlmConfig config, HttpClient httpClient)
+
+    public AnthropicClient(LlmConfig config, HttpClient httpClient, CredentialPool? credentialPool = null)
     {
         _config = config;
         _httpClient = httpClient;
-        
-        if (!string.IsNullOrEmpty(config.ApiKey))
+        _credentialPool = credentialPool;
+
+        if (_credentialPool is null && !string.IsNullOrEmpty(config.ApiKey))
         {
             _httpClient.DefaultRequestHeaders.Add("x-api-key", config.ApiKey);
         }
-        
+
         _httpClient.DefaultRequestHeaders.Add("anthropic-version", ApiVersion);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }

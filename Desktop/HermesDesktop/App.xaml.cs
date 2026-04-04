@@ -51,14 +51,21 @@ public partial class App : Application
         var llmConfig = HermesEnvironment.CreateLlmConfig();
         services.AddSingleton(llmConfig);
         services.AddSingleton<HttpClient>();
+
+        // Optional credential pool for multi-key rotation
+        var credentialPool = HermesEnvironment.LoadCredentialPool();
+        if (credentialPool is not null)
+            services.AddSingleton(credentialPool);
+
         services.AddSingleton<IChatClient>(sp =>
         {
             var config = sp.GetRequiredService<LlmConfig>();
             var http = sp.GetRequiredService<HttpClient>();
+            var pool = sp.GetService<CredentialPool>(); // null if not configured
             return config.Provider?.ToLowerInvariant() switch
             {
-                "anthropic" or "claude" => new AnthropicClient(config, http),
-                _ => new OpenAiClient(config, http),
+                "anthropic" or "claude" => new AnthropicClient(config, http, pool),
+                _ => new OpenAiClient(config, http, pool),
             };
         });
 
@@ -148,6 +155,12 @@ public partial class App : Application
             sp.GetRequiredService<IChatClient>(),
             coordinatorStateDir));
 
+        // Skill invoker (for slash command support)
+        services.AddSingleton(sp => new Hermes.Agent.Skills.SkillInvoker(
+            sp.GetRequiredService<Hermes.Agent.Skills.SkillManager>(),
+            sp.GetRequiredService<IChatClient>(),
+            sp.GetRequiredService<ILogger<Hermes.Agent.Skills.SkillInvoker>>()));
+
         // Chat service (pure C# — no sidecar)
         services.AddSingleton<HermesChatService>();
 
@@ -157,7 +170,53 @@ public partial class App : Application
         RegisterAllTools(provider);
         InitializeMcpAsync(provider, projectDir);
 
+        // Wire permission prompt callback to show a ContentDialog in the UI
+        WirePermissionCallback(provider);
+
         return provider;
+    }
+
+    /// <summary>
+    /// Wire the Agent's permission callback to show a WinUI ContentDialog when Ask is returned.
+    /// </summary>
+    private static void WirePermissionCallback(IServiceProvider services)
+    {
+        var agent = services.GetRequiredService<Hermes.Agent.Core.Agent>();
+        agent.PermissionPromptCallback = async (toolName, message) =>
+        {
+            // Must dispatch to UI thread for ContentDialog
+            var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+
+            if (App.Current is App app && app._window is not null)
+            {
+                app._window.DispatcherQueue.TryEnqueue(async () =>
+                {
+                    try
+                    {
+                        var dialog = new Microsoft.UI.Xaml.Controls.ContentDialog
+                        {
+                            Title = $"Permission Required: {toolName}",
+                            Content = message,
+                            PrimaryButtonText = "Allow",
+                            CloseButtonText = "Deny",
+                            XamlRoot = app._window.Content.XamlRoot
+                        };
+                        var result = await dialog.ShowAsync();
+                        tcs.TrySetResult(result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary);
+                    }
+                    catch
+                    {
+                        tcs.TrySetResult(false);
+                    }
+                });
+            }
+            else
+            {
+                tcs.TrySetResult(false);
+            }
+
+            return await tcs.Task;
+        };
     }
 
     /// <summary>

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Hermes.Agent.Skills;
 using HermesDesktop.Models;
 using HermesDesktop.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +58,10 @@ public sealed partial class ChatPage : Page
 
         ConnectionStateText.Text = ResourceLoader.GetString("ChatStatusChecking");
         SessionIdLabel.Text = "New Session";
+
+        // Show current model in header
+        var modelName = HermesEnvironment.DefaultModel;
+        CurrentModelText.Text = string.IsNullOrWhiteSpace(modelName) ? "" : $"Model: {modelName}";
 
         // Wire session panel click → load session into chat
         SessionPanelView.SessionSelected += OnSessionSelected;
@@ -143,6 +149,14 @@ public sealed partial class ChatPage : Page
 
         PromptTextBox.Text = "";
         AppendUserMessage(prompt);
+
+        // ── Slash command interception ──
+        if (prompt.StartsWith("/", StringComparison.Ordinal))
+        {
+            await HandleSlashCommandAsync(prompt);
+            return;
+        }
+
         SetBusy(true);
         ShowThinking(true);
 
@@ -204,6 +218,74 @@ public sealed partial class ChatPage : Page
             SetBusy(false);
             SessionIdLabel.Text = string.IsNullOrEmpty(_chatService.CurrentSessionId)
                 ? "New Session" : $"Session: {_chatService.CurrentSessionId}";
+            PromptTextBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    // ── Slash Commands ──
+
+    private async Task HandleSlashCommandAsync(string input)
+    {
+        var parts = input.TrimStart('/').Split(' ', 2);
+        var command = parts[0].ToLowerInvariant();
+        var args = parts.Length > 1 ? parts[1] : "";
+
+        if (command is "help" or "skills")
+        {
+            var skillManager = App.Services.GetRequiredService<SkillManager>();
+            var skills = skillManager.ListSkills();
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine("Available slash commands:");
+            lines.AppendLine("  /help, /skills  - Show this help");
+            lines.AppendLine("  /new            - Start a new chat");
+            lines.AppendLine();
+            if (skills.Count > 0)
+            {
+                lines.AppendLine("Installed skills:");
+                foreach (var s in skills)
+                    lines.AppendLine($"  /{s.Name}  - {s.Description}");
+            }
+            else
+            {
+                lines.AppendLine("No custom skills installed. Add .md files to your skills directory.");
+            }
+            AppendSystemMessage(lines.ToString());
+            return;
+        }
+
+        if (command == "new")
+        {
+            NewChat_Click(this, new RoutedEventArgs());
+            return;
+        }
+
+        // Try to invoke as a skill
+        try
+        {
+            var invoker = App.Services.GetRequiredService<SkillInvoker>();
+            SetBusy(true);
+            ShowThinking(true);
+
+            var response = await invoker.InvokeAsync(command, args, CancellationToken.None);
+            ShowThinking(false);
+
+            if (!string.IsNullOrWhiteSpace(response))
+                AppendAssistantMessage(response);
+            else
+                AppendSystemMessage("Skill returned an empty response.");
+        }
+        catch (SkillNotFoundException)
+        {
+            AppendSystemMessage($"Unknown command: /{command}. Type /help for available commands.");
+        }
+        catch (Exception ex)
+        {
+            ShowThinking(false);
+            AppendSystemMessage($"Skill error: {ex.Message}");
+        }
+        finally
+        {
+            SetBusy(false);
             PromptTextBox.Focus(FocusState.Programmatic);
         }
     }

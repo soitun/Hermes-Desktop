@@ -33,7 +33,12 @@
 
             <StackPanel Spacing="4">
                 <TextBlock Text="Hermes.C# - Your AI Teammate" FontSize="22" FontWeight="SemiBold" />
-                <TextBlock x:Name="ConnectionStateText" Style="{StaticResource BodySecondaryTextStyle}" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock x:Name="ConnectionStateText" Style="{StaticResource BodySecondaryTextStyle}" />
+                    <TextBlock x:Name="CurrentModelText" FontSize="13"
+                               Foreground="{StaticResource AppTextSecondaryBrush}"
+                               Text="" />
+                </StackPanel>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
