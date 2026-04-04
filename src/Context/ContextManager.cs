@@ -106,8 +106,13 @@ public sealed class ContextManager
                 await SummarizeEvictedAsync(state, evictedMessages, ct);
             }
 
+            // Recompute pressure after summarization may have grown state.Summary
+            var postSummarizeStateTokens = state.EstimateTokens();
+            var postTotalTokens = systemTokens + postSummarizeStateTokens + recentTokens + retrievedTokens + userTokens;
+            var postPressure = _budget.GetPressure(postTotalTokens);
+
             // Under critical pressure, compact the state itself
-            if (pressure == BudgetPressure.Critical)
+            if (postPressure == BudgetPressure.Critical)
             {
                 state.Compact(maxDecisions: 5, maxQuestions: 3, maxEntities: 10);
                 _logger.LogWarning("Critical budget pressure — compacted session state");

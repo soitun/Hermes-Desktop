@@ -22,7 +22,7 @@ public sealed class SessionState
     public List<string> ImportantEntities { get; set; } = new();
 
     /// <summary>Compressed summary of older turns evicted from the recent window.</summary>
-    public SessionSummary Summary { get; set; } = new();
+    public ContextSummary Summary { get; set; } = new();
 
     /// <summary>
     /// OpenAI response_id for cache chaining across turns.
@@ -94,7 +94,7 @@ public sealed class Decision
 }
 
 /// <summary>Rolling summary of conversation turns that have been evicted from the recent window.</summary>
-public sealed class SessionSummary
+public sealed class ContextSummary
 {
     /// <summary>
     /// Compressed representation of older turns that have been evicted from the recent window.
