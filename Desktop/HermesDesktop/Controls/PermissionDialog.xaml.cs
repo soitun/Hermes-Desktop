@@ -113,10 +113,15 @@ public sealed partial class PermissionDialog : UserControl
         };
         
         dialog.PermissionResolved += (s, e) => tcs.TrySetResult(e);
-        
+
         var flyout = new Flyout { Content = dialog };
+
+        // Handle light-dismiss (clicking outside) — resolve with Deny so the caller doesn't hang
+        flyout.Closed += (s, e) =>
+            tcs.TrySetResult(new PermissionResult(PermissionDecision.Deny));
+
         flyout.ShowAt(anchor);
-        
+
         return await tcs.Task;
     }
 }

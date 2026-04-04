@@ -27,22 +27,20 @@ public sealed class BashTool : ITool
     public Task<ToolResult> ExecuteAsync(object parameters, CancellationToken ct)
     {
         var p = (BashParameters)parameters;
-        return ExecuteCommandAsync(p.Command, p.WorkingDirectory, p.TimeoutMs, p.RunInBackground, p.Description, p.SkipSecurityCheck, ct);
+        return ExecuteCommandAsync(p.Command, p.WorkingDirectory, p.TimeoutMs, p.RunInBackground, p.Description, ct);
     }
     
     private async Task<ToolResult> ExecuteCommandAsync(
-        string command, 
-        string? workingDirectory, 
-        int timeoutMs, 
+        string command,
+        string? workingDirectory,
+        int timeoutMs,
         bool runInBackground,
         string? description,
-        bool skipSecurityCheck,
         CancellationToken ct)
     {
         try
         {
-            // Security analysis (unless explicitly skipped)
-            if (!skipSecurityCheck)
+            // Security analysis — always enforced, never skippable
             {
                 var context = new ShellContext
                 {
@@ -153,5 +151,5 @@ public sealed class BashParameters
     public int TimeoutMs { get; init; } = 120000;
     public bool RunInBackground { get; init; }
     public string? Description { get; init; }
-    public bool SkipSecurityCheck { get; init; } = false;
+    // Security check is always enforced — cannot be bypassed via parameters
 }

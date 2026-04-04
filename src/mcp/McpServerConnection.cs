@@ -217,6 +217,10 @@ public sealed record McpToolResult(
 /// <summary>
 /// Content block in MCP tool result.
 /// </summary>
+[System.Text.Json.Serialization.JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[System.Text.Json.Serialization.JsonDerivedType(typeof(Text), "text")]
+[System.Text.Json.Serialization.JsonDerivedType(typeof(Image), "image")]
+[System.Text.Json.Serialization.JsonDerivedType(typeof(Resource), "resource")]
 public abstract record McpContentBlock
 {
     public sealed record Text(string Value) : McpContentBlock;

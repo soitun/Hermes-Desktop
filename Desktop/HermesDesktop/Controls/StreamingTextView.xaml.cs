@@ -55,19 +55,29 @@ public sealed partial class StreamingTextView : UserControl
     /// <summary>
     /// Start streaming mode - show cursor.
     /// </summary>
+    private CancellationTokenSource? _cursorCts;
+
     public void StartStreaming()
     {
+        // Cancel any existing animation loop before starting a new one
+        _cursorCts?.Cancel();
+        _cursorCts?.Dispose();
+        _cursorCts = new CancellationTokenSource();
+
         _isStreaming = true;
         CursorIndicator.Visibility = Visibility.Visible;
-        CursorAnimation();
+        CursorAnimation(_cursorCts.Token);
     }
-    
+
     /// <summary>
     /// End streaming mode - hide cursor.
     /// </summary>
     public void EndStreaming()
     {
         _isStreaming = false;
+        _cursorCts?.Cancel();
+        _cursorCts?.Dispose();
+        _cursorCts = null;
         CursorIndicator.Visibility = Visibility.Collapsed;
     }
     
@@ -91,12 +101,16 @@ public sealed partial class StreamingTextView : UserControl
         // This is simplified - real impl would measure text position
     }
     
-    private async void CursorAnimation()
+    private async void CursorAnimation(CancellationToken ct)
     {
-        while (_isStreaming)
+        try
         {
-            CursorIndicator.Opacity = CursorIndicator.Opacity > 0.5 ? 0.2 : 1.0;
-            await Task.Delay(500);
+            while (_isStreaming && !ct.IsCancellationRequested)
+            {
+                CursorIndicator.Opacity = CursorIndicator.Opacity > 0.5 ? 0.2 : 1.0;
+                await Task.Delay(500, ct);
+            }
         }
+        catch (OperationCanceledException) { /* expected on EndStreaming */ }
     }
 }

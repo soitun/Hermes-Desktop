@@ -159,6 +159,8 @@ internal sealed class HermesChatService : IDisposable
     public void ResetConversation()
     {
         _currentSession = null;
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
         _streamCts = null;
     }
 

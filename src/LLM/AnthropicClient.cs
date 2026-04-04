@@ -39,9 +39,18 @@ public sealed class AnthropicClient : IChatClient
     
     public async Task<string> CompleteAsync(IEnumerable<Message> messages, CancellationToken ct)
     {
-        var events = StreamAsync(null, messages, null, ct);
+        // Extract system messages to pass as Anthropic's system parameter
+        var msgList = messages.ToList();
+        var systemPrompt = string.Join("\n", msgList
+            .Where(m => m.Role == "system")
+            .Select(m => m.Content));
+        var nonSystemMessages = msgList.Where(m => m.Role != "system");
+
+        var events = StreamEventsAsync(
+            string.IsNullOrEmpty(systemPrompt) ? null : systemPrompt,
+            nonSystemMessages, null, ct);
         var content = new StringBuilder();
-        
+
         await foreach (var evt in events.WithCancellation(ct))
         {
             if (evt is StreamEvent.TokenDelta delta)
@@ -49,18 +58,18 @@ public sealed class AnthropicClient : IChatClient
                 content.Append(delta.Text);
             }
         }
-        
+
         return content.ToString();
     }
-    
-    public async Task<ChatResponse> CompleteWithToolsAsync(
+
+    public Task<ChatResponse> CompleteWithToolsAsync(
         IEnumerable<Message> messages,
         IEnumerable<ToolDefinition> tools,
         CancellationToken ct)
     {
-        // TODO: Implement Anthropic tool calling
-        var result = await CompleteAsync(messages, ct);
-        return new ChatResponse { Content = result, FinishReason = "stop" };
+        // Anthropic tool calling not yet implemented — fail fast so callers know
+        throw new NotSupportedException(
+            "Anthropic tool calling is not yet implemented. Use OpenAiClient for tool-calling workflows.");
     }
 
     public async IAsyncEnumerable<string> StreamAsync(
@@ -269,7 +278,10 @@ public sealed class AnthropicClient : IChatClient
         
         foreach (var msg in messages)
         {
-            // Convert to Anthropic format
+            // Skip system messages — they're passed as the top-level "system" parameter
+            if (msg.Role == "system") continue;
+
+            // Anthropic only supports "user" and "assistant" roles
             formattedMessages.Add(new
             {
                 role = msg.Role == "assistant" ? "assistant" : "user",

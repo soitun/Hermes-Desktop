@@ -47,7 +47,15 @@ public partial class App : Application
         services.AddSingleton(llmConfig);
         services.AddSingleton<HttpClient>();
         services.AddSingleton<IChatClient>(sp =>
-            new OpenAiClient(sp.GetRequiredService<LlmConfig>(), sp.GetRequiredService<HttpClient>()));
+        {
+            var config = sp.GetRequiredService<LlmConfig>();
+            var http = sp.GetRequiredService<HttpClient>();
+            return config.Provider?.ToLowerInvariant() switch
+            {
+                "anthropic" or "claude" => new AnthropicClient(config, http),
+                _ => new OpenAiClient(config, http),
+            };
+        });
 
         // Core agent
         services.AddSingleton<Agent>();

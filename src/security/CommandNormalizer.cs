@@ -145,12 +145,14 @@ public static class CommandNormalizer
                     break;
                     
                 case '\'':
-                    inSingleQuote = !inSingleQuote;
+                    if (!inDoubleQuote) // Only toggle single-quote state when NOT inside double quotes
+                        inSingleQuote = !inSingleQuote;
                     current.Append(c);
                     break;
-                    
+
                 case '"':
-                    inDoubleQuote = !inDoubleQuote;
+                    if (!inSingleQuote) // Only toggle double-quote state when NOT inside single quotes
+                        inDoubleQuote = !inDoubleQuote;
                     current.Append(c);
                     break;
                     

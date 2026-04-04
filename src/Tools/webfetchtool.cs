@@ -19,7 +19,10 @@ public sealed class WebFetchTool : ITool
     
     public WebFetchTool(HttpClient? httpClient = null, SsrfGuard? ssrfGuard = null)
     {
-        _httpClient = httpClient ?? new HttpClient();
+        _httpClient = httpClient ?? new HttpClient(new HttpClientHandler
+        {
+            AllowAutoRedirect = false // Prevent SSRF via redirect chains to private IPs
+        });
         _ssrfGuard = ssrfGuard ?? new SsrfGuard();
     }
     
@@ -51,9 +54,26 @@ public sealed class WebFetchTool : ITool
                 request.Headers.Add("User-Agent", "Hermes-Agent/1.0");
             }
             
+            // Follow redirects manually with SSRF validation on each hop
             var response = await _httpClient.SendAsync(request, linkedCts.Token);
+            var maxRedirects = 5;
+            while (maxRedirects-- > 0 &&
+                   (int)response.StatusCode >= 300 && (int)response.StatusCode < 400 &&
+                   response.Headers.Location is { } redirectUri)
+            {
+                var target = redirectUri.IsAbsoluteUri
+                    ? redirectUri.ToString()
+                    : new Uri(new Uri(p.Url), redirectUri).ToString();
+
+                var redirectValidation = await _ssrfGuard.ValidateAsync(target, linkedCts.Token);
+                if (!redirectValidation.IsValid)
+                    return ToolResult.Fail($"SSRF protection on redirect: {redirectValidation.Reason}");
+
+                response.Dispose();
+                response = await _httpClient.GetAsync(target, linkedCts.Token);
+            }
             response.EnsureSuccessStatusCode();
-            
+
             var content = await response.Content.ReadAsStringAsync(linkedCts.Token);
             
             // Extract content based on type

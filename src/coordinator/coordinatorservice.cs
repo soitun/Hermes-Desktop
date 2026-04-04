@@ -311,18 +311,36 @@ Provide a unified, coherent summary of everything that was accomplished. Highlig
 
     private async Task SaveStateAsync(CoordinationState state, CancellationToken ct)
     {
-        var path = Path.Combine(_stateDir, $"{state.CoordinationId}.json");
+        var path = GetSafeStatePath(state.CoordinationId);
         var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true });
         await File.WriteAllTextAsync(path, json, ct);
     }
 
     public async Task<CoordinationState?> LoadStateAsync(string coordinationId, CancellationToken ct)
     {
-        var path = Path.Combine(_stateDir, $"{coordinationId}.json");
+        var path = GetSafeStatePath(coordinationId);
         if (!File.Exists(path)) return null;
         var json = await File.ReadAllTextAsync(path, ct);
         return JsonSerializer.Deserialize<CoordinationState>(json,
             new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+    }
+
+    /// <summary>
+    /// Returns a safe file path for a coordination ID, preventing path traversal attacks.
+    /// </summary>
+    private string GetSafeStatePath(string coordinationId)
+    {
+        // Strip any path separators or invalid chars to prevent traversal
+        var safeId = Path.GetFileName(coordinationId);
+        if (string.IsNullOrWhiteSpace(safeId) || safeId != coordinationId)
+            throw new ArgumentException($"Invalid coordination ID: '{coordinationId}'");
+
+        var path = Path.GetFullPath(Path.Combine(_stateDir, $"{safeId}.json"));
+        var stateRoot = Path.GetFullPath(_stateDir);
+        if (!path.StartsWith(stateRoot, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException($"Coordination ID resolves outside state directory: '{coordinationId}'");
+
+        return path;
     }
 
     // ── Parse Subtasks from LLM Response ──

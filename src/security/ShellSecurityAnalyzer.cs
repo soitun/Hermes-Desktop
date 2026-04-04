@@ -86,42 +86,53 @@ public sealed class ShellSecurityAnalyzer
     {
         var warnings = new List<string>();
         var suggestions = new List<string>();
-        
+        var needsReview = false;
+        string? reviewReason = null;
+
         // Normalize command first
         var normalized = CommandNormalizer.Normalize(command);
-        
+
         // Run through all validators
         foreach (var validator in _validators)
         {
             var result = validator.Validate(normalized, context);
-            
+
             if (result.Classification == SecurityClassification.Dangerous)
             {
                 return SecurityResult.Dangerous($"{validator.Name}: {result.Reason}");
             }
-            
+
             if (result.Classification == SecurityClassification.TooComplex)
             {
                 return SecurityResult.TooComplex($"{validator.Name}: {result.Reason}");
             }
-            
+
+            // Track NeedsReview even when Warnings list is empty
+            if (result.Classification == SecurityClassification.NeedsReview)
+            {
+                needsReview = true;
+                reviewReason ??= $"{validator.Name}: {result.Reason}";
+                if (!string.IsNullOrEmpty(result.Reason))
+                    warnings.Add($"{validator.Name}: {result.Reason}");
+            }
+
             if (result.Warnings is not null)
                 warnings.AddRange(result.Warnings);
-            
+
             if (result.Suggestions is not null)
                 suggestions.AddRange(result.Suggestions);
         }
-        
-        // If any warnings, needs review
-        if (warnings.Count > 0)
+
+        // If any validator returned NeedsReview or produced warnings, propagate
+        if (needsReview || warnings.Count > 0)
         {
             return new SecurityResult(
                 SecurityClassification.NeedsReview,
-                "Command has warnings that require review",
+                reviewReason ?? "Command has warnings that require review",
                 warnings,
                 suggestions);
         }
-        
+
         return SecurityResult.Safe();
     }
 }
