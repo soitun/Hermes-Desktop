@@ -148,20 +148,20 @@ public sealed partial class ChatPage : Page
 
         try
         {
-            var reply = await _chatService.SendAsync(prompt, CancellationToken.None);
+            // Task.Run prevents UI thread deadlock with HttpClient async
+            var reply = await Task.Run(() => _chatService.SendAsync(prompt, CancellationToken.None));
+
             if (string.IsNullOrWhiteSpace(reply.Response))
                 AppendSystemMessage("LLM returned an empty response.");
             else
                 await ReplayResponseAsync(reply.Response);
 
-            ConnectionStateText.Text = ResourceLoader.GetString("StatusConnected");
+            ConnectionStateText.Text = "Connected";
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            ConnectionStateText.Text = ResourceLoader.GetString("StatusOffline");
-            var msg = ex.Message;
-            if (msg.Length > 300) msg = msg[..300];
-            AppendSystemMessage($"Error: {msg}");
+            ConnectionStateText.Text = "Error";
+            AppendSystemMessage($"Error: {ex.Message}");
         }
         catch (OperationCanceledException)
         {
@@ -203,7 +203,7 @@ public sealed partial class ChatPage : Page
     private async Task RefreshConnectionStatusAsync()
     {
         ConnectionStateText.Text = ResourceLoader.GetString("ChatStatusChecking");
-        var (isHealthy, _) = await _chatService.CheckHealthAsync(CancellationToken.None);
+        var (isHealthy, _) = await Task.Run(() => _chatService.CheckHealthAsync(CancellationToken.None));
         ConnectionStateText.Text = ResourceLoader.GetString(isHealthy ? "StatusConnected" : "StatusOffline");
     }
 
