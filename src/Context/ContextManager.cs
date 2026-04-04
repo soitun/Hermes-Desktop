@@ -214,8 +214,7 @@ public sealed class ContextManager
     public void EvictState(string sessionId)
     {
         _sessionStates.TryRemove(sessionId, out _);
-        if (_sessionLocks.TryRemove(sessionId, out var semaphore))
-            semaphore.Dispose();
+        _sessionLocks.TryRemove(sessionId, out _);
     }
 
     /// <summary>
