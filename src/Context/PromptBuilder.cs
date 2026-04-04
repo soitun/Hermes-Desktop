@@ -20,6 +20,8 @@ public sealed class PromptBuilder
 
     private readonly string _systemPrompt;
 
+    public string SystemPrompt => _systemPrompt;
+
     public PromptBuilder(string systemPrompt)
     {
         _systemPrompt = systemPrompt;
@@ -34,10 +36,10 @@ public sealed class PromptBuilder
         var stateJson = JsonSerializer.Serialize(new
         {
             activeGoal = NullIfEmpty(request.State.ActiveGoal),
-            constraints = NullIfEmpty(request.State.Constraints),
-            decisions = NullIfEmpty(request.State.Decisions?.Select(d => new { d.What, d.Why })),
-            openQuestions = NullIfEmpty(request.State.OpenQuestions),
-            importantEntities = NullIfEmpty(request.State.ImportantEntities),
+            constraints = NullIfEmptyCollection(request.State.Constraints),
+            decisions = NullIfEmptyCollection(request.State.Decisions?.Select(d => new { d.What, d.Why })),
+            openQuestions = NullIfEmptyCollection(request.State.OpenQuestions),
+            importantEntities = NullIfEmptyCollection(request.State.ImportantEntities),
             summary = NullIfEmpty(request.State.Summary?.Content)
         }, JsonOpts);
 
@@ -112,16 +114,12 @@ public sealed class PromptBuilder
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value;
 
-    private static T? NullIfEmpty<T>(IEnumerable<T>? collection) where T : class
+    private static object? NullIfEmptyCollection<T>(IEnumerable<T>? collection)
     {
-        if (collection is null) return default;
-        // Materialize to check emptiness, but return null for JSON omission
+        if (collection is null) return null;
         var list = collection as IList<T> ?? collection.ToList();
-        return list.Count == 0 ? default : (T?)(object)list;
+        return list.Count == 0 ? null : list;
     }
-
-    private static List<T>? NullIfEmpty<T>(List<T>? list)
-        => list is null || list.Count == 0 ? null : list;
 }
 
 public sealed class BuildRequest

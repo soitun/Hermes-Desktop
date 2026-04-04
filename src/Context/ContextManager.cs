@@ -63,11 +63,12 @@ public sealed class ContextManager
         var recentTurns = _budget.TrimToRecentWindow(allMessages);
         var evictedMessages = _budget.GetEvictedMessages(allMessages);
 
-        // Estimate current token usage
+        // Estimate current token usage (all layers that will be sent)
+        var systemTokens = _budget.EstimateTokens(_promptBuilder.SystemPrompt);
         var stateTokens = state.EstimateTokens();
         var recentTokens = _budget.EstimateTokens(recentTurns);
         var userTokens = _budget.EstimateTokens(userMessage);
-        var totalTokens = stateTokens + recentTokens + userTokens;
+        var totalTokens = systemTokens + stateTokens + recentTokens + userTokens;
 
         var pressure = _budget.GetPressure(totalTokens);
 
