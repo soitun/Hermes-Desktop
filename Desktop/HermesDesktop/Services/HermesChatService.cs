@@ -74,16 +74,16 @@ internal sealed class HermesChatService : IDisposable
         #endregion
         EnsureSession();
 
-        // Save user message to transcript before sending
-        var userMsg = new Message { Role = "user", Content = message };
-        await _transcriptStore.SaveMessageAsync(_currentSession!.Id, userMsg, ct);
+        // Save user message to transcript (Agent.ChatAsync will add it to session)
+        await _transcriptStore.SaveMessageAsync(_currentSession!.Id,
+            new Message { Role = "user", Content = message }, ct);
 
-        // Agent.ChatAsync handles tool calling loop internally
+        // Agent.ChatAsync: adds user msg to session, calls LLM (with tool loop), adds assistant msg
         var response = await _agent.ChatAsync(message, _currentSession, ct);
 
         // Save assistant response to transcript
-        var assistantMsg = new Message { Role = "assistant", Content = response };
-        await _transcriptStore.SaveMessageAsync(_currentSession.Id, assistantMsg, ct);
+        await _transcriptStore.SaveMessageAsync(_currentSession.Id,
+            new Message { Role = "assistant", Content = response }, ct);
 
         _logger.LogInformation("Chat reply for session {SessionId}: {Length} chars", _currentSession.Id, response.Length);
         return new HermesChatReply(response, _currentSession.Id);
