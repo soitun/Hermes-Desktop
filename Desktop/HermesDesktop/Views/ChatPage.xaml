@@ -62,7 +62,7 @@
                                     BorderThickness="1" CornerRadius="12" Padding="16,12">
                                     <StackPanel Spacing="8">
                                         <TextBlock Foreground="{x:Bind LabelBrush}" Style="{StaticResource LabelTextStyle}" Text="{x:Bind AuthorLabel}" />
-                                        <TextBlock Text="{x:Bind Content}" TextWrapping="WrapWholeWords" />
+                                        <TextBlock Text="{x:Bind Content, Mode=OneWay}" TextWrapping="WrapWholeWords" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
