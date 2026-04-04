@@ -212,7 +212,7 @@ public sealed class ContextManager
         {
             var summary = await _chatClient.CompleteAsync(summarizePrompt, ct);
             state.Summary.Content = summary.Trim();
-            state.Summary.CoveredThroughTurn = state.TurnCount - 1;
+            state.Summary.CoveredThroughTurn = Math.Max(0, state.TurnCount - 1);
 
             _logger.LogInformation(
                 "Summarized {Count} evicted messages into {Tokens} est. tokens",

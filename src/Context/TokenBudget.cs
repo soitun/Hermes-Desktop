@@ -8,13 +8,20 @@ namespace Hermes.Agent.Context;
 /// </summary>
 public sealed class TokenBudget
 {
-    public int MaxTokens { get; init; } = 8000;
+    private readonly int _maxTokens;
+
+    public TokenBudget(int maxTokens = 8000)
+    {
+        _maxTokens = maxTokens;
+    }
+
+    public int MaxTokens => _maxTokens;
 
     /// <summary>75% of max — crossing this triggers summarization of older turns.</summary>
-    public int SummaryThreshold { get; init; } = 6000;
+    public int SummaryThreshold => (int)(_maxTokens * 0.75);
 
     /// <summary>94% of max — crossing this triggers aggressive trimming.</summary>
-    public int CriticalThreshold { get; init; } = 7500;
+    public int CriticalThreshold => (int)(_maxTokens * 0.94);
 
     /// <summary>Number of most recent turns to keep in the context window.</summary>
     public int RecentTurnWindow { get; init; } = 6;

@@ -49,8 +49,7 @@ public sealed class PromptBuilder
             SessionStateJson = stateJson,
             RetrievedContext = request.RetrievedContext,
             RecentTurns = request.RecentTurns,
-            CurrentUserMessage = request.CurrentUserMessage,
-            PreviousResponseId = request.State.PreviousResponseId
+            CurrentUserMessage = request.CurrentUserMessage
         };
     }
 
@@ -137,9 +136,4 @@ public sealed class PromptPacket
     public List<string>? RetrievedContext { get; init; }
     public List<Message> RecentTurns { get; init; } = new();
     public required string CurrentUserMessage { get; init; }
-
-    /// <summary>
-    /// OpenAI response_id from the previous turn, enabling cache chaining.
-    /// </summary>
-    public string? PreviousResponseId { get; init; }
 }
