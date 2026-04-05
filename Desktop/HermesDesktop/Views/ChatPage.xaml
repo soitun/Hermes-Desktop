@@ -15,9 +15,9 @@
 
     <Grid x:Name="MainGrid" Padding="20,12,24,20" ColumnSpacing="14" RowSpacing="14">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="400"/>
+            <ColumnDefinition Width="*" MinWidth="300"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="340" MinWidth="260" MaxWidth="500"/>
+            <ColumnDefinition Width="340" MinWidth="200" MaxWidth="700"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -125,10 +125,13 @@
             </Grid>
         </Border>
 
-        <!-- Splitter -->
-        <Border Grid.Column="1" Grid.Row="1" Width="6" Background="Transparent"
-                PointerPressed="Splitter_PointerPressed" PointerMoved="Splitter_PointerMoved" PointerReleased="Splitter_PointerReleased">
-            <Border Width="2" Background="{StaticResource AppStrokeBrush}" HorizontalAlignment="Center" CornerRadius="1"/>
+        <!-- Splitter (drag to resize chat ↔ right panel) -->
+        <Border Grid.Column="1" Grid.Row="1" Width="12" Background="Transparent" Margin="-3,0"
+                PointerPressed="Splitter_PointerPressed" PointerMoved="Splitter_PointerMoved"
+                PointerReleased="Splitter_PointerReleased" PointerEntered="Splitter_PointerEntered"
+                PointerExited="Splitter_PointerExited">
+            <Border x:Name="SplitterHandle" Width="4" Background="{StaticResource AppStrokeBrush}"
+                    HorizontalAlignment="Center" CornerRadius="2" Opacity="0.5"/>
         </Border>
 
         <!-- Right Panel - Tabbed Panels -->

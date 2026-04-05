@@ -453,6 +453,8 @@ public sealed partial class ChatPage : Page
     {
         _isDragging = true;
         ((UIElement)sender).CapturePointer(e.Pointer);
+        SplitterHandle.Opacity = 1.0;
+        SplitterHandle.Background = (Brush)Application.Current.Resources["AppAccentBrush"];
         e.Handled = true;
     }
 
@@ -470,7 +472,27 @@ public sealed partial class ChatPage : Page
     {
         _isDragging = false;
         ((UIElement)sender).ReleasePointerCapture(e.Pointer);
+        SplitterHandle.Opacity = 0.5;
+        SplitterHandle.Background = (Brush)Application.Current.Resources["AppStrokeBrush"];
         e.Handled = true;
+    }
+
+    private void Splitter_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (!_isDragging)
+        {
+            SplitterHandle.Opacity = 0.8;
+            ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.SizeWestEast);
+        }
+    }
+
+    private void Splitter_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (!_isDragging)
+        {
+            SplitterHandle.Opacity = 0.5;
+            ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
+        }
     }
 
     // ── Panel Tabs ──
