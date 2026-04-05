@@ -29,12 +29,12 @@
 
         <!-- Tab bar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,0,0,16">
-            <Button x:Name="TabIdentity" Content="Identity" Click="Tab_Click" Tag="identity"
+            <Button x:Name="TabAgents" Content="Agents" Click="Tab_Click" Tag="agents"
                     Background="{StaticResource AppAccentGradientBrush}" Foreground="#16110D" FontSize="13" Padding="16,8" CornerRadius="8"/>
-            <Button x:Name="TabSouls" Content="Souls" Click="Tab_Click" Tag="souls"
+            <Button x:Name="TabIdentity" Content="Identity" Click="Tab_Click" Tag="identity"
                     Background="{StaticResource AppInsetBrush}" Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13" Padding="16,8" CornerRadius="8"
                     BorderBrush="{StaticResource AppStrokeBrush}"/>
-            <Button x:Name="TabAgents" Content="Agents" Click="Tab_Click" Tag="agents"
+            <Button x:Name="TabSouls" Content="Souls" Click="Tab_Click" Tag="souls"
                     Background="{StaticResource AppInsetBrush}" Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13" Padding="16,8" CornerRadius="8"
                     BorderBrush="{StaticResource AppStrokeBrush}"/>
         </StackPanel>
@@ -42,7 +42,7 @@
         <!-- ═══════════════════════════════════════════════ -->
         <!-- IDENTITY TAB                                    -->
         <!-- ═══════════════════════════════════════════════ -->
-        <ScrollViewer x:Name="IdentityContent" Grid.Row="2">
+        <ScrollViewer x:Name="IdentityContent" Grid.Row="2" Visibility="Collapsed">
             <Grid ColumnSpacing="24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -182,7 +182,7 @@
         <!-- ═══════════════════════════════════════════════ -->
         <!-- AGENTS TAB                                      -->
         <!-- ═══════════════════════════════════════════════ -->
-        <Grid x:Name="AgentsContent" Grid.Row="2" Visibility="Collapsed" ColumnSpacing="24">
+        <Grid x:Name="AgentsContent" Grid.Row="2" Visibility="Visible" ColumnSpacing="24">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>

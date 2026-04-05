@@ -14,7 +14,7 @@ public sealed partial class AgentPage : Page
     private readonly SoulRegistry _soulRegistry = App.Services.GetRequiredService<SoulRegistry>();
     private readonly AgentProfileManager _profileManager = App.Services.GetRequiredService<AgentProfileManager>();
 
-    private string _activeTab = "identity";
+    private string _activeTab = "agents";
     private SoulTemplate? _selectedSoul;
 
     public AgentPage()
