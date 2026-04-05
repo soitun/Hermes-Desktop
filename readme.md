@@ -1,5 +1,9 @@
 # Hermes Desktop
 
+<p align="center">
+  <img src="docs/logo.png" alt="Hermes Desktop Logo" width="128" />
+</p>
+
 ![Hermes Agent Banner](docs/screenshots/banner.png)
 
 A native Windows desktop AI agent built with WinUI 3 and .NET 10 — featuring a soul identity system, 94 skills, multi-agent profiles, and 6 messaging platform integrations.
