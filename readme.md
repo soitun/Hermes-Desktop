@@ -163,7 +163,7 @@ Hermes.CS/
 
 ## Based On
 
-This project is based on the [NousResearch Hermes](https://github.com/NousResearch) agent architecture. Hermes Desktop is a native Windows implementation of the Hermes agent design, bringing agentic AI capabilities to the desktop with a modern WinUI 3 interface.
+This project is based on the [NousResearch Hermes](https://github.com/NousResearch) agent architecture. Hermes Desktop is a native Windows implementation of the Hermes agent design, bringing agentic AI capabilities to the desktop with a modern WinUI 3 interface. https://github.com/NousResearch/hermes-agent, this is aOde to the team building it, just a fork from their vision, please support them and give them love and use the product they worked so hard to create.
 
 ## License
 
