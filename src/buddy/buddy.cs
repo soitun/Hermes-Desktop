@@ -90,6 +90,11 @@ public sealed class BuddyState
     public DateTime LastSessionActivity { get; set; } = DateTime.UtcNow;
     public DateTime LastTick { get; set; } = DateTime.UtcNow;
 
+    // Fractional accumulators for sub-integer decay (not persisted visually, but persisted in state)
+    public double HungerAccum { get; set; }
+    public double HappinessAccum { get; set; }
+    public double EnergyAccum { get; set; }
+
     public int XPToNextLevel => Level * 100;
 
     public BuddyState Clone() => new()
@@ -98,7 +103,8 @@ public sealed class BuddyState
         Level = Level, XP = XP, TotalXP = TotalXP,
         LastInteraction = LastInteraction, LastFed = LastFed,
         LastPlayed = LastPlayed, LastSessionActivity = LastSessionActivity,
-        LastTick = LastTick
+        LastTick = LastTick,
+        HungerAccum = HungerAccum, HappinessAccum = HappinessAccum, EnergyAccum = EnergyAccum
     };
 }
 
@@ -112,16 +118,26 @@ public static class BuddyEngine
     private const double HappinessDecayPerHour = 3.0;
     private const double EnergyRecoveryPerHour = 2.0;
 
-    /// <summary>Apply time-based decay since last tick.</summary>
+    /// <summary>Apply time-based decay since last tick. Uses fractional accumulation to avoid truncation on short intervals.</summary>
     public static void Tick(BuddyState state)
     {
         var now = DateTime.UtcNow;
         var hours = (now - state.LastTick).TotalHours;
-        if (hours < 0.001) return; // less than ~4 seconds, skip
+        if (hours < 0.001) return;
 
-        state.Hunger = Clamp(state.Hunger - (int)(HungerDecayPerHour * hours));
-        state.Happiness = Clamp(state.Happiness - (int)(HappinessDecayPerHour * hours));
-        state.Energy = Clamp(state.Energy + (int)(EnergyRecoveryPerHour * hours));
+        // Accumulate fractional changes, only apply whole units
+        state.HungerAccum += HungerDecayPerHour * hours;
+        state.HappinessAccum += HappinessDecayPerHour * hours;
+        state.EnergyAccum += EnergyRecoveryPerHour * hours;
+
+        var hungerDrop = (int)state.HungerAccum;
+        var happyDrop = (int)state.HappinessAccum;
+        var energyGain = (int)state.EnergyAccum;
+
+        if (hungerDrop > 0) { state.Hunger = Clamp(state.Hunger - hungerDrop); state.HungerAccum -= hungerDrop; }
+        if (happyDrop > 0) { state.Happiness = Clamp(state.Happiness - happyDrop); state.HappinessAccum -= happyDrop; }
+        if (energyGain > 0) { state.Energy = Clamp(state.Energy + energyGain); state.EnergyAccum -= energyGain; }
+
         state.LastTick = now;
     }
 
@@ -136,9 +152,9 @@ public static class BuddyEngine
             case BuddyAction.Feed:
             {
                 var sinceFed = (now - state.LastFed).TotalMinutes;
-                state.LastFed = now;
                 if (sinceFed < 5 && state.Hunger > 70)
                     return "cooldown_feed";
+                state.LastFed = now;
                 state.Hunger = Clamp(state.Hunger + 25);
                 state.XP += 1; state.TotalXP += 1;
                 return "feed";
@@ -146,11 +162,11 @@ public static class BuddyEngine
             case BuddyAction.Play:
             {
                 var sincePlayed = (now - state.LastPlayed).TotalMinutes;
-                state.LastPlayed = now;
                 if (state.Energy < 10)
                     return "too_tired";
                 if (sincePlayed < 3 && state.Happiness > 80)
                     return "cooldown_play";
+                state.LastPlayed = now;
                 state.Happiness = Clamp(state.Happiness + 20);
                 state.Energy = Clamp(state.Energy - 10);
                 state.XP += 2; state.TotalXP += 2;
@@ -587,6 +603,7 @@ public sealed class BuddyService
     private readonly string _buddyDir;
     private readonly IChatClient _chatClient;
     private readonly object _lock = new();
+    private readonly SemaphoreSlim _saveLock = new(1, 1);
     private Buddy? _buddy;
     private BuddyState? _state;
     private string? _userId;
@@ -797,7 +814,6 @@ public sealed class BuddyService
         var stored = new StoredBuddy { Name = buddy.Name, Personality = buddy.Personality, HatchedAt = buddy.HatchedAt };
         var json = JsonSerializer.Serialize(stored, new JsonSerializerOptions { WriteIndented = true });
         Directory.CreateDirectory(_buddyDir);
-        var tmp = StatePath + ".tmp";
         await File.WriteAllTextAsync(SoulPath, json, ct);
     }
 
@@ -817,15 +833,18 @@ public sealed class BuddyService
         BuddyState? snapshot;
         lock (_lock) { snapshot = _state?.Clone(); }
         if (snapshot == null) return;
+
+        await _saveLock.WaitAsync();
         try
         {
             var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
             Directory.CreateDirectory(_buddyDir);
-            var tmp = StatePath + ".tmp";
+            var tmp = Path.Combine(_buddyDir, $"buddy_state_{Guid.NewGuid():N}.tmp");
             await File.WriteAllTextAsync(tmp, json);
             File.Move(tmp, StatePath, overwrite: true);
         }
         catch { /* swallow I/O errors from save */ }
+        finally { _saveLock.Release(); }
     }
 }
 

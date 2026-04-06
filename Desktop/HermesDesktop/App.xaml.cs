@@ -106,7 +106,6 @@ public partial class App : Application
                     PermissionRule.AllowAll("web_fetch"),
                     PermissionRule.AllowAll("todo_write"),
                     PermissionRule.AllowAll("ask_user"),
-                    PermissionRule.AllowAll("terminal"),
                 }
             },
             sp.GetRequiredService<ILogger<PermissionManager>>()));
@@ -286,7 +285,7 @@ public partial class App : Application
                         var evt = entry.ToolName.ToLower() switch
                         {
                             "user_message" => BuddySessionEvent.UserMessage,
-                            _ => BuddySessionEvent.ToolComplete
+                            _ => BuddySessionEvent.ToolCall  // ToolCall not ToolComplete — event fires at start
                         };
                         await buddyService.OnActivityAsync(evt);
                     }

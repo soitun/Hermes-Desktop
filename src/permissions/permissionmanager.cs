@@ -147,14 +147,22 @@ public sealed class PermissionManager
     private bool IsReadOnlyBashCommand(string command)
     {
         // Read-only commands
+        // Only allow clearly read-only commands — no redirects, pipes to destructive cmds
         var readOnlyPrefixes = new[] {
-            "git ", "ls ", "dir ", "cat ", "head ", "tail ", "grep ", "rg ", "find ",
-            "pwd ", "echo ", "type ", "where ", "which ", "wc ", "du ", "df ",
+            "ls ", "dir ", "cat ", "head ", "tail ", "grep ", "rg ", "find ",
+            "pwd", "echo ", "type ", "where ", "which ", "wc ", "du ", "df ",
             "dotnet --", "dotnet list", "node --", "python --version",
             "Get-ChildItem", "Get-Content", "Get-Item", "Get-Process",
-            "Test-Path", "Resolve-Path"
+            "Test-Path", "Resolve-Path",
+            // Git read-only subcommands only
+            "git status", "git log", "git diff", "git show", "git branch",
+            "git remote", "git tag", "git describe", "git rev-parse",
         };
-        return readOnlyPrefixes.Any(p => command.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+        if (!readOnlyPrefixes.Any(p => command.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        // Reject if command contains shell operators that could chain destructive ops
+        var dangerousOperators = new[] { ">", "|", "&&", "||", ";", "`" };
+        return !dangerousOperators.Any(op => command.Contains(op));
     }
     
     private bool IsInWorkspace<T>(T input)
