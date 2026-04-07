@@ -20,7 +20,11 @@
             <SolidColorBrush x:Key="AppAccentBrush" Color="#D4A017" />
             <SolidColorBrush x:Key="AppAccentTextBrush" Color="#FFD700" />
             <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="#95A2B1" />
-            <SolidColorBrush x:Key="AppUserBubbleBrush" Color="#1E1A0A" />
+            <LinearGradientBrush x:Key="AppUserBubbleBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#1E1A0A" Offset="0.0" />
+                <GradientStop Color="#2A2210" Offset="0.5" />
+                <GradientStop Color="#332A0F" Offset="1.0" />
+            </LinearGradientBrush>
             <SolidColorBrush x:Key="AppHeroAccentBrush" Color="#FFD700" />
             <SolidColorBrush x:Key="AppAccentDarkBrush" Color="#C68E17" />
             <SolidColorBrush x:Key="AppOutlineBrush" Color="#3A3A00" />

@@ -45,7 +45,7 @@ public sealed partial class ChatPage : Page
         _assistantBackgroundBrush = GetBrush("AppPanelBrush");
         _assistantBorderBrush = GetBrush("AppStrokeBrush");
         _userBackgroundBrush = GetBrush("AppUserBubbleBrush");
-        _userBorderBrush = GetBrush("AppAccentBrush");
+        _userBorderBrush = GetBrush("AppAccentGradientBrush");
         _systemBackgroundBrush = GetBrush("AppInsetBrush");
         _systemBorderBrush = GetBrush("AppSubtleStrokeBrush");
         _accentLabelBrush = GetBrush("AppAccentTextBrush");
