@@ -26,14 +26,25 @@
                   Background="Transparent">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <StackPanel Margin="0,4">
-                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
-                                   Foreground="{StaticResource AppAccentTextBrush}" TextTrimming="CharacterEllipsis"/>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding TimeAgo}" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
-                            <TextBlock Text="{Binding MessageCount}" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AppAccentTextBrush}" TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding TimeAgo}" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding MessageCount}" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+                        <Button Grid.Column="1" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                Click="DeleteSession_Click" Tag="{Binding Id}"
+                                Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}"
+                                BorderThickness="0" Padding="6,4" VerticalAlignment="Center"
+                                ToolTipService.ToolTip="Delete session"/>
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>

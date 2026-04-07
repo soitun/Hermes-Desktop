@@ -93,9 +93,9 @@ internal sealed class HermesChatService : IDisposable
         }
     }
 
-    // ── Stream (token-by-token) ──
+    // ── Stream (structured events: tokens + thinking) ──
 
-    public async IAsyncEnumerable<string> StreamAsync(
+    public async IAsyncEnumerable<ChatStreamEvent> StreamStructuredAsync(
         string message,
         [EnumeratorCancellation] CancellationToken ct)
     {
@@ -107,18 +107,44 @@ internal sealed class HermesChatService : IDisposable
         _currentSession!.AddMessage(userMsg);
         await _transcriptStore.SaveMessageAsync(_currentSession.Id, userMsg, _streamCts.Token);
 
-        // Stream tokens
+        // Stream structured events
         var fullResponse = new System.Text.StringBuilder();
-        await foreach (var token in _chatClient.StreamAsync(_currentSession.Messages, _streamCts.Token))
+        await foreach (var evt in _chatClient.StreamAsync(null, _currentSession.Messages, null, _streamCts.Token))
         {
-            fullResponse.Append(token);
-            yield return token;
+            switch (evt)
+            {
+                case Hermes.Agent.LLM.StreamEvent.TokenDelta td:
+                    fullResponse.Append(td.Text);
+                    yield return new ChatStreamEvent(ChatStreamEventType.Token, td.Text);
+                    break;
+
+                case Hermes.Agent.LLM.StreamEvent.ThinkingDelta tk:
+                    yield return new ChatStreamEvent(ChatStreamEventType.Thinking, tk.Text);
+                    break;
+
+                case Hermes.Agent.LLM.StreamEvent.StreamError err:
+                    yield return new ChatStreamEvent(ChatStreamEventType.Error, err.Error.Message);
+                    break;
+            }
         }
 
         // Save complete assistant response
         var assistantMsg = new Message { Role = "assistant", Content = fullResponse.ToString() };
         _currentSession.AddMessage(assistantMsg);
         await _transcriptStore.SaveMessageAsync(_currentSession.Id, assistantMsg, CancellationToken.None);
+    }
+
+    // ── Legacy string streaming (kept for backwards compatibility) ──
+
+    public async IAsyncEnumerable<string> StreamAsync(
+        string message,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        await foreach (var evt in StreamStructuredAsync(message, ct))
+        {
+            if (evt.Type == ChatStreamEventType.Token)
+                yield return evt.Text;
+        }
     }
 
     // ── Cancel ──
@@ -186,3 +212,14 @@ internal sealed class HermesChatService : IDisposable
 
     internal sealed record HermesChatReply(string Response, string SessionId);
 }
+
+// ── Structured stream events for UI consumption ──
+
+internal enum ChatStreamEventType
+{
+    Token,
+    Thinking,
+    Error
+}
+
+internal sealed record ChatStreamEvent(ChatStreamEventType Type, string Text);

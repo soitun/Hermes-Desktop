@@ -64,6 +64,23 @@
                                     BorderThickness="1" CornerRadius="12" Padding="16,12">
                                     <StackPanel Spacing="8">
                                         <TextBlock Foreground="{x:Bind LabelBrush}" Style="{StaticResource LabelTextStyle}" Text="{x:Bind AuthorLabel}" />
+
+                                        <!-- Thinking/reasoning content (collapsible) -->
+                                        <Expander Visibility="{x:Bind HasThinking, Mode=OneWay}" HorizontalAlignment="Stretch"
+                                                  HorizontalContentAlignment="Stretch" IsExpanded="False"
+                                                  Padding="0" MinHeight="0">
+                                            <Expander.Header>
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="&#x1F9E0;" FontSize="12"/>
+                                                    <TextBlock Text="Reasoning" FontSize="12" FontStyle="Italic"
+                                                               Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                                                </StackPanel>
+                                            </Expander.Header>
+                                            <TextBlock Text="{x:Bind ThinkingContent, Mode=OneWay}" TextWrapping="WrapWholeWords"
+                                                       FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"
+                                                       FontStyle="Italic" Padding="8,4"/>
+                                        </Expander>
+
                                         <TextBlock Text="{x:Bind Content, Mode=OneWay}" TextWrapping="WrapWholeWords" />
                                     </StackPanel>
                                 </Border>
@@ -75,13 +92,20 @@
                 <!-- Thinking indicator — uses Opacity to avoid layout shift -->
                 <Border Grid.Row="2" x:Name="ThinkingIndicator" Opacity="0"
                         Padding="18,8" Background="Transparent" Height="36">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ProgressRing x:Name="ThinkingRing" IsActive="False" Width="16" Height="16"
-                                      Foreground="{StaticResource AppAccentBrush}"/>
-                        <TextBlock x:Name="ThinkingText" Text="Hermes is thinking..."
-                                   FontSize="13" Foreground="{StaticResource AppTextSecondaryBrush}"
-                                   FontStyle="Italic"/>
-                    </StackPanel>
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressRing x:Name="ThinkingRing" IsActive="False" Width="16" Height="16"
+                                          Foreground="{StaticResource AppAccentBrush}"/>
+                            <TextBlock x:Name="ThinkingText" Text="Hermes is thinking..."
+                                       FontSize="13" Foreground="{StaticResource AppTextSecondaryBrush}"
+                                       FontStyle="Italic"/>
+                        </StackPanel>
+                        <Button x:Name="StopButton" Content="Stop" Click="StopGeneration_Click"
+                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Background="{StaticResource AppInsetBrush}" Foreground="White"
+                                BorderBrush="{StaticResource AppSubtleStrokeBrush}"
+                                Padding="12,4" FontSize="12" CornerRadius="6"/>
+                    </Grid>
                 </Border>
 
                 <!-- Input Area -->

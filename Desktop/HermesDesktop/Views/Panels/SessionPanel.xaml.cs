@@ -66,7 +66,24 @@ public sealed partial class SessionPanel : UserControl
             : Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 
+    public event Action<string>? SessionDeleted;
+
     private void NewSession_Click(object sender, RoutedEventArgs e) => SessionSelected?.Invoke("");
+
+    private async void DeleteSession_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string sessionId) return;
+
+        await _transcriptStore.DeleteSessionAsync(sessionId, CancellationToken.None);
+        var item = Sessions.FirstOrDefault(s => s.Id == sessionId);
+        if (item is not null) Sessions.Remove(item);
+
+        EmptyState.Visibility = Sessions.Count == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        SessionDeleted?.Invoke(sessionId);
+    }
 
     private void SessionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

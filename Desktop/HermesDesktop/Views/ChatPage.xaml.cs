@@ -67,6 +67,13 @@ public sealed partial class ChatPage : Page
         // Wire session panel click → load session into chat
         SessionPanelView.SessionSelected += OnSessionSelected;
 
+        // Wire session panel delete → reset if current session deleted
+        SessionPanelView.SessionDeleted += sessionId =>
+        {
+            if (_chatService.CurrentSessionId == sessionId)
+                NewChat_Click(this, new RoutedEventArgs());
+        };
+
         // Wire agent activity tracking → replay panel + screen capture
         _agent.ActivityEntryAdded += async entry =>
         {
@@ -222,21 +229,40 @@ public sealed partial class ChatPage : Page
                 HorizontalAlignment.Left,
                 _assistantBackgroundBrush, _assistantBorderBrush, _secondaryLabelBrush);
             assistantItem.IsStreaming = true;
-            ShowThinking(false); // Hide thinking as soon as first content arrives
 
-            // Stream tokens into the bubble
+            // Stream structured events (tokens + thinking)
             var hasContent = false;
-            await foreach (var token in _chatService.StreamAsync(prompt, CancellationToken.None))
+            await foreach (var evt in _chatService.StreamStructuredAsync(prompt, CancellationToken.None))
             {
-                if (!hasContent)
+                switch (evt.Type)
                 {
-                    hasContent = true;
-                    ShowThinking(false);
+                    case ChatStreamEventType.Thinking:
+                        if (!assistantItem.IsThinking)
+                        {
+                            assistantItem.IsThinking = true;
+                            ThinkingText.Text = "Hermes is reasoning...";
+                        }
+                        assistantItem.AppendThinking(evt.Text);
+                        break;
+
+                    case ChatStreamEventType.Token:
+                        if (!hasContent)
+                        {
+                            hasContent = true;
+                            assistantItem.IsThinking = false;
+                            ShowThinking(false);
+                        }
+                        assistantItem.AppendToken(evt.Text);
+                        break;
+
+                    case ChatStreamEventType.Error:
+                        AppendSystemMessage($"Stream error: {evt.Text}");
+                        break;
                 }
-                assistantItem.AppendToken(token);
             }
 
             assistantItem.IsStreaming = false;
+            assistantItem.IsThinking = false;
 
             if (!hasContent)
             {
@@ -342,6 +368,13 @@ public sealed partial class ChatPage : Page
             SetBusy(false);
             PromptTextBox.Focus(FocusState.Programmatic);
         }
+    }
+
+    // ── Stop Generation ──
+
+    private void StopGeneration_Click(object sender, RoutedEventArgs e)
+    {
+        _chatService.CancelStream();
     }
 
     // ── New Chat ──

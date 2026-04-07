@@ -99,32 +99,71 @@ public sealed class OpenAiClient : IChatClient
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
-        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        response.EnsureSuccessStatusCode();
-
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
-        using var reader = new StreamReader(stream);
-
-        while (!ct.IsCancellationRequested)
+        HttpResponseMessage response;
+        try
         {
-            var line = await reader.ReadLineAsync(ct);
-            if (line is null) break;
-            if (!line.StartsWith("data: ")) continue;
+            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException ex)
+        {
+            yield return $"\n[Connection error: {ex.Message}]";
+            yield break;
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            yield return "\n[Request timed out — the LLM server may be overloaded or unreachable]";
+            yield break;
+        }
 
-            var data = line["data: ".Length..];
-            if (data == "[DONE]") break;
+        using (response)
+        {
+            using var stream = await response.Content.ReadAsStreamAsync(ct);
+            using var reader = new StreamReader(stream);
 
-            using var chunk = JsonDocument.Parse(data);
-            var choices = chunk.RootElement.GetProperty("choices");
-            if (choices.GetArrayLength() == 0) continue;
-
-            var delta = choices[0].GetProperty("delta");
-            if (delta.TryGetProperty("content", out var contentEl) &&
-                contentEl.ValueKind == JsonValueKind.String)
+            while (!ct.IsCancellationRequested)
             {
-                var token = contentEl.GetString();
-                if (!string.IsNullOrEmpty(token))
-                    yield return token;
+                string? line;
+                try
+                {
+                    line = await reader.ReadLineAsync(ct);
+                }
+                catch (IOException)
+                {
+                    yield return "\n[Connection lost during streaming]";
+                    yield break;
+                }
+
+                if (line is null) break;
+                if (!line.StartsWith("data: ")) continue;
+
+                var data = line["data: ".Length..];
+                if (data == "[DONE]") break;
+
+                JsonDocument? chunk;
+                try
+                {
+                    chunk = JsonDocument.Parse(data);
+                }
+                catch (JsonException)
+                {
+                    continue; // Skip malformed chunks
+                }
+
+                using (chunk)
+                {
+                    if (!chunk.RootElement.TryGetProperty("choices", out var choices) ||
+                        choices.GetArrayLength() == 0) continue;
+
+                    var delta = choices[0].GetProperty("delta");
+                    if (delta.TryGetProperty("content", out var contentEl) &&
+                        contentEl.ValueKind == JsonValueKind.String)
+                    {
+                        var token = contentEl.GetString();
+                        if (!string.IsNullOrEmpty(token))
+                            yield return token;
+                    }
+                }
             }
         }
     }
@@ -227,9 +266,68 @@ public sealed class OpenAiClient : IChatClient
         IEnumerable<ToolDefinition>? tools = null,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        // Delegate to string streaming, wrapping tokens as StreamEvents
+        // Track <think>...</think> tags for reasoning models (Ollama QwQ, DeepSeek-R1, etc.)
+        var inThinkBlock = false;
+        var thinkBuffer = new StringBuilder();
+
         await foreach (var token in StreamAsync(messages.ToList(), ct))
         {
+            // Check for <think> tag opening
+            if (!inThinkBlock && token.Contains("<think>"))
+            {
+                inThinkBlock = true;
+                // Extract any content after <think> tag
+                var afterTag = token[(token.IndexOf("<think>") + "<think>".Length)..];
+
+                // Emit any content before <think> as regular token
+                var beforeTag = token[..token.IndexOf("<think>")];
+                if (!string.IsNullOrEmpty(beforeTag))
+                    yield return new StreamEvent.TokenDelta(beforeTag);
+
+                if (!string.IsNullOrEmpty(afterTag))
+                {
+                    // Check if </think> is in the same token
+                    if (afterTag.Contains("</think>"))
+                    {
+                        var thinking = afterTag[..afterTag.IndexOf("</think>")];
+                        if (!string.IsNullOrEmpty(thinking))
+                            yield return new StreamEvent.ThinkingDelta(thinking);
+                        inThinkBlock = false;
+
+                        var afterClose = afterTag[(afterTag.IndexOf("</think>") + "</think>".Length)..];
+                        if (!string.IsNullOrEmpty(afterClose))
+                            yield return new StreamEvent.TokenDelta(afterClose);
+                    }
+                    else
+                    {
+                        yield return new StreamEvent.ThinkingDelta(afterTag);
+                    }
+                }
+                continue;
+            }
+
+            // Inside a think block
+            if (inThinkBlock)
+            {
+                if (token.Contains("</think>"))
+                {
+                    var beforeClose = token[..token.IndexOf("</think>")];
+                    if (!string.IsNullOrEmpty(beforeClose))
+                        yield return new StreamEvent.ThinkingDelta(beforeClose);
+                    inThinkBlock = false;
+
+                    var afterClose = token[(token.IndexOf("</think>") + "</think>".Length)..];
+                    if (!string.IsNullOrEmpty(afterClose))
+                        yield return new StreamEvent.TokenDelta(afterClose);
+                }
+                else
+                {
+                    yield return new StreamEvent.ThinkingDelta(token);
+                }
+                continue;
+            }
+
+            // Regular content token
             yield return new StreamEvent.TokenDelta(token);
         }
         yield return new StreamEvent.MessageComplete("stop", new UsageStats(0, 0));

@@ -45,13 +45,20 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        // Logging
-        services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
+        // Logging — file + debug sinks so logs are visible outside Visual Studio
+        var logsDir = Path.Combine(HermesEnvironment.HermesHomePath, "hermes-cs", "logs");
+        Directory.CreateDirectory(logsDir);
+        services.AddLogging(builder =>
+        {
+            builder.AddDebug();
+            builder.SetMinimumLevel(LogLevel.Information);
+            builder.AddProvider(new FileLoggerProvider(Path.Combine(logsDir, "hermes.log")));
+        });
 
         // LLM config from environment/config.yaml
         var llmConfig = HermesEnvironment.CreateLlmConfig();
         services.AddSingleton(llmConfig);
-        services.AddSingleton<HttpClient>();
+        services.AddSingleton(_ => new HttpClient { Timeout = TimeSpan.FromMinutes(5) });
 
         // Optional credential pool for multi-key rotation
         var credentialPool = HermesEnvironment.LoadCredentialPool();
