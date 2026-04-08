@@ -138,6 +138,7 @@ public static class ModelCatalog
             ["minimax"]    = "https://api.minimax.chat/v1",
             ["openrouter"] = "https://openrouter.ai/api/v1",
             ["nous"]       = "https://openrouter.ai/api/v1",
+            ["ollama"]     = "http://127.0.0.1:11434/v1",
             ["local"]      = "http://127.0.0.1:11434/v1",
         };
 

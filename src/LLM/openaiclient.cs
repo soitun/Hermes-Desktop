@@ -67,6 +67,13 @@ public sealed class OpenAiClient : IChatClient
         if (msg.TryGetProperty("content", out var contentEl) && contentEl.ValueKind == JsonValueKind.String)
             content = contentEl.GetString();
 
+        // Fallback: reasoning models (MiniMax, DeepSeek-R1, etc.) may put text in "reasoning" with empty "content"
+        if (string.IsNullOrEmpty(content) &&
+            msg.TryGetProperty("reasoning", out var reasoningEl) && reasoningEl.ValueKind == JsonValueKind.String)
+        {
+            content = reasoningEl.GetString();
+        }
+
         List<ToolCall>? toolCalls = null;
         if (msg.TryGetProperty("tool_calls", out var toolCallsEl) && toolCallsEl.ValueKind == JsonValueKind.Array)
         {

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Hermes.Agent.Core;
 using Hermes.Agent.LLM;
 using Hermes.Agent.Permissions;
+using Hermes.Agent.Soul;
 using Hermes.Agent.Transcript;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +21,7 @@ internal sealed class HermesChatService : IDisposable
     private readonly Agent _agent;
     private readonly IChatClient _chatClient;
     private readonly TranscriptStore _transcriptStore;
+    private readonly SoulService? _soulService;
     private readonly ILogger<HermesChatService> _logger;
 
     private Session? _currentSession;
@@ -30,11 +32,13 @@ internal sealed class HermesChatService : IDisposable
         Agent agent,
         IChatClient chatClient,
         TranscriptStore transcriptStore,
-        ILogger<HermesChatService> logger)
+        ILogger<HermesChatService> logger,
+        SoulService? soulService = null)
     {
         _agent = agent;
         _chatClient = chatClient;
         _transcriptStore = transcriptStore;
+        _soulService = soulService;
         _logger = logger;
     }
 
@@ -107,9 +111,28 @@ internal sealed class HermesChatService : IDisposable
         _currentSession!.AddMessage(userMsg);
         await _transcriptStore.SaveMessageAsync(_currentSession.Id, userMsg, _streamCts.Token);
 
+        // Inject soul context as first system message if available
+        var messagesToSend = new List<Message>();
+        if (_soulService is not null)
+        {
+            try
+            {
+                var soulContext = await _soulService.AssembleSoulContextAsync();
+                if (!string.IsNullOrWhiteSpace(soulContext))
+                {
+                    messagesToSend.Add(new Message { Role = "system", Content = soulContext });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load soul context for streaming");
+            }
+        }
+        messagesToSend.AddRange(_currentSession.Messages);
+
         // Stream structured events
         var fullResponse = new System.Text.StringBuilder();
-        await foreach (var evt in _chatClient.StreamAsync(null, _currentSession.Messages, null, _streamCts.Token))
+        await foreach (var evt in _chatClient.StreamAsync(null, messagesToSend, null, _streamCts.Token))
         {
             switch (evt)
             {

@@ -619,6 +619,47 @@ internal static class HermesEnvironment
         return null;
     }
 
+    /// <summary>Read a value from any top-level section of config.yaml (section.key).</summary>
+    internal static string? ReadConfigSetting(string section, string key)
+    {
+        if (!File.Exists(HermesConfigPath))
+            return null;
+
+        bool inSection = false;
+        string sectionHeader = $"{section}:";
+        foreach (string rawLine in File.ReadLines(HermesConfigPath))
+        {
+            string line = rawLine.TrimEnd();
+            if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#", StringComparison.Ordinal))
+                continue;
+
+            if (!char.IsWhiteSpace(rawLine, 0) && line.EndsWith(":", StringComparison.Ordinal))
+            {
+                inSection = string.Equals(line, sectionHeader, StringComparison.OrdinalIgnoreCase);
+                continue;
+            }
+
+            if (!inSection) continue;
+
+            string trimmed = line.Trim();
+            string prefix = $"{key}:";
+            if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return trimmed[prefix.Length..].Trim().Trim('"', '\'');
+        }
+
+        return null;
+    }
+
+    /// <summary>Save settings to any top-level section of config.yaml.</summary>
+    internal static async Task SaveConfigSectionAsync(string section, Dictionary<string, string> settings)
+    {
+        var configPath = HermesConfigPath;
+        var dir = Path.GetDirectoryName(configPath);
+        if (dir is not null && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+        await WriteYamlSectionAsync(configPath, section, settings);
+    }
+
     private static async Task WriteYamlSectionAsync(string configPath, string sectionName, Dictionary<string, string> settings)
     {
         var lines = File.Exists(configPath)
