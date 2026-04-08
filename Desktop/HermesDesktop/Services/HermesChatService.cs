@@ -110,8 +110,17 @@ internal sealed class HermesChatService : IDisposable
                 switch (evt)
                 {
                     case Hermes.Agent.LLM.StreamEvent.TokenDelta td:
-                        fullResponse.Append(td.Text);
-                        yield return new ChatStreamEvent(ChatStreamEventType.Token, td.Text);
+                        // Tool-calling status messages (e.g. "[Calling tool: bash]") are
+                        // informational — show in UI but don't accumulate into the saved response
+                        if (td.Text.StartsWith("\n[") && td.Text.TrimEnd().EndsWith("]"))
+                        {
+                            yield return new ChatStreamEvent(ChatStreamEventType.Thinking, td.Text.Trim());
+                        }
+                        else
+                        {
+                            fullResponse.Append(td.Text);
+                            yield return new ChatStreamEvent(ChatStreamEventType.Token, td.Text);
+                        }
                         break;
 
                     case Hermes.Agent.LLM.StreamEvent.ThinkingDelta tk:
@@ -126,8 +135,9 @@ internal sealed class HermesChatService : IDisposable
         }
         finally
         {
-            // Save partial or complete response — handles both normal completion and cancellation
-            if (fullResponse.Length > 0 && _currentSession!.Messages.LastOrDefault()?.Role != "assistant")
+            // Save response (partial or complete) — handles normal completion and cancellation.
+            // Always save to avoid dangling user messages in the session, even if response is empty.
+            if (_currentSession!.Messages.LastOrDefault()?.Role != "assistant")
             {
                 var assistantMsg = new Message { Role = "assistant", Content = fullResponse.ToString() };
                 _currentSession.AddMessage(assistantMsg);

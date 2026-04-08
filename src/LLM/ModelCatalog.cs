@@ -115,6 +115,17 @@ public static class ModelCatalog
                 new("x-ai/grok-4.20-beta",             "Grok 4.20 Beta",                128_000),
             },
 
+            ["ollama"] = new ModelEntry[]
+            {
+                new("glm-5:cloud",              "GLM-5 (Cloud)",            128_000),
+                new("minimax-m2.7:cloud",       "MiniMax M2.7 (Cloud)",     204_800),
+                new("qwen3.5:cloud",            "Qwen 3.5 (Cloud)",        131_072),
+                new("gemma4:31b",               "Gemma 4 31B (Local)",      32_768),
+                new("gemma4:e4b",               "Gemma 4 E4B (Local)",      32_768),
+                new("glm-4.7-flash:latest",     "GLM-4.7 Flash (Local)",    32_768),
+                new("llama4:latest",            "Llama 4 (Local)",          128_000),
+            },
+
             ["local"] = new ModelEntry[]
             {
                 new("custom",  "Custom / Local Model", 128_000),
@@ -124,7 +135,7 @@ public static class ModelCatalog
     /// <summary>All known provider names.</summary>
     public static IReadOnlyList<string> Providers { get; } = new[]
     {
-        "nous", "openai", "anthropic", "qwen", "deepseek", "minimax", "openrouter", "local"
+        "nous", "openai", "anthropic", "qwen", "deepseek", "minimax", "openrouter", "ollama", "local"
     };
 
     /// <summary>Default base URLs for known providers.</summary>
