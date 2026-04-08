@@ -55,7 +55,7 @@
 
                 <!-- Messages -->
                 <ListView x:Name="MessagesList" Grid.Row="1" Padding="18" Background="Transparent" BorderThickness="0"
-                    ItemsSource="{x:Bind Messages, Mode=OneWay}" SelectionMode="None">
+                    SelectionMode="None">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:ChatMessageItem">
                             <Grid Margin="0,0,0,10">
@@ -108,41 +108,60 @@
                     </Grid>
                 </Border>
 
-                <!-- Input Area -->
-                <Grid Grid.Row="3" Padding="18,14,18,18" RowSpacing="12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+                <!-- Input Area — Claude Code style -->
+                <StackPanel Grid.Row="3" Padding="18,8,18,14" Spacing="6">
+                    <!-- Input container with rounded border -->
+                    <Border Background="{StaticResource AppInsetBrush}"
+                            BorderBrush="{StaticResource AppStrokeBrush}"
+                            BorderThickness="1" CornerRadius="12" Padding="12,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                    <!-- Permission Mode -->
-                    <ComboBox x:Name="PermissionModeSelector" Grid.Row="0" Margin="0,0,0,10" HorizontalAlignment="Stretch"
-                        SelectionChanged="PermissionModeSelector_SelectionChanged">
-                        <ComboBoxItem Content="Default (Ask Everything)" Tag="Default" />
-                        <ComboBoxItem Content="Plan Mode (Read-Only)" Tag="Plan" />
-                        <ComboBoxItem Content="Auto Mode" Tag="Auto" />
-                        <ComboBoxItem Content="Accept Edits" Tag="AcceptEdits" />
-                        <ComboBoxItem Content="Bypass (DANGEROUS)" Tag="Bypass" />
-                    </ComboBox>
+                            <TextBox x:Name="PromptTextBox"
+                                     AcceptsReturn="True"
+                                     MaxHeight="200" MinHeight="36"
+                                     PlaceholderText="Message Hermes..."
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="White"
+                                     TextWrapping="Wrap"
+                                     KeyDown="PromptTextBox_KeyDown"
+                                     TextChanged="PromptTextBox_TextChanged" />
 
-                    <!-- Input -->
-                    <Grid Grid.Row="1" ColumnSpacing="14">
+                            <Button x:Name="SendButton" Grid.Column="1"
+                                    Click="SendPrompt_Click"
+                                    VerticalAlignment="Bottom"
+                                    Background="Transparent" BorderThickness="0"
+                                    Padding="8" CornerRadius="8"
+                                    IsEnabled="False">
+                                <FontIcon Glyph="&#xE724;" FontSize="18"
+                                          Foreground="{StaticResource AppAccentBrush}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Permission mode indicator + disclaimer -->
+                    <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-
-                        <TextBox x:Name="PromptTextBox" Grid.Row="1" Grid.Column="0" MinHeight="88"
-                            AcceptsReturn="False" KeyDown="PromptTextBox_KeyDown"
-                            PlaceholderText="Type a message... (Enter to send, Shift+Enter for newline)"
-                            Background="{StaticResource AppInsetBrush}" BorderBrush="{StaticResource AppStrokeBrush}"
-                            Foreground="White" TextWrapping="Wrap" />
-
-                        <Button x:Name="SendButton" Grid.Column="1" Content="Send" Click="SendPrompt_Click"
-                            Background="{StaticResource AppAccentGradientBrush}" BorderBrush="{StaticResource AppAccentDarkBrush}"
-                            Foreground="#16110D" VerticalAlignment="Bottom" Padding="30,10" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" Opacity="0.5">
+                            <TextBlock x:Name="PermissionModeLabel" Text="Default mode"
+                                       FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <HyperlinkButton x:Name="PermissionModeToggle" Content="change"
+                                             FontSize="11" Padding="0"
+                                             Click="PermissionModeToggle_Click" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="Hermes can make mistakes. Verify important information."
+                                   FontSize="10" Foreground="{StaticResource AppTextSecondaryBrush}"
+                                   Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                </Grid>
+                </StackPanel>
             </Grid>
         </Border>
 

@@ -13,55 +13,96 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <StackPanel Spacing="4" Margin="0,0,0,16">
-            <TextBlock Text="Skills" Style="{StaticResource PageEyebrowTextStyle}"/>
-            <StackPanel Orientation="Horizontal" Spacing="12">
-                <TextBlock Text="Skill Library" FontSize="22" FontWeight="SemiBold"/>
-                <Border Background="#3A3A00" CornerRadius="8" Padding="10,4" VerticalAlignment="Center">
-                    <TextBlock x:Name="SkillCountBadge" Text="0 skills" FontSize="12"
-                               Foreground="{StaticResource AppAccentTextBrush}"/>
-                </Border>
+        <Grid Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Skills" Style="{StaticResource PageEyebrowTextStyle}"/>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="Skill Library" FontSize="22" FontWeight="SemiBold"/>
+                    <Border Background="#3A3A00" CornerRadius="8" Padding="10,4" VerticalAlignment="Center">
+                        <TextBlock x:Name="SkillCountBadge" Text="0 skills" FontSize="12"
+                                   Foreground="{StaticResource AppAccentTextBrush}"/>
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="Browse, search, and preview all available agent capabilities"
+                           FontSize="13" Foreground="{StaticResource AppTextSecondaryBrush}"/>
             </StackPanel>
-            <TextBlock Text="Markdown-based custom capabilities with YAML frontmatter"
-                       FontSize="13" Foreground="{StaticResource AppTextSecondaryBrush}"/>
-        </StackPanel>
 
-        <!-- Search box -->
-        <TextBox x:Name="SearchBox" Grid.Row="1" PlaceholderText="Search skills by name, description, or tools..."
-                 FontSize="13" Margin="0,0,0,16" TextChanged="SearchBox_TextChanged"
-                 Background="{StaticResource AppInsetBrush}" BorderBrush="{StaticResource AppStrokeBrush}"/>
+            <!-- Sort dropdown -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                <TextBlock Text="Sort:" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"
+                           VerticalAlignment="Center"/>
+                <ComboBox x:Name="SortSelector" SelectedIndex="0" SelectionChanged="SortSelector_SelectionChanged"
+                          FontSize="12" MinWidth="120"
+                          Background="{StaticResource AppInsetBrush}" BorderBrush="{StaticResource AppStrokeBrush}">
+                    <ComboBoxItem Content="Name (A-Z)" Tag="NameAsc"/>
+                    <ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
+                    <ComboBoxItem Content="Category" Tag="Category"/>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
+
+        <!-- Search + category chips -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBox x:Name="SearchBox" PlaceholderText="&#xE721; Search skills by name, description, category, or tools..."
+                     FontSize="13" Margin="0,0,0,10" TextChanged="SearchBox_TextChanged"
+                     Background="{StaticResource AppInsetBrush}" BorderBrush="{StaticResource AppStrokeBrush}"/>
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="CategoryChips" Orientation="Horizontal" Spacing="6"/>
+            </ScrollViewer>
+        </Grid>
 
         <!-- Two-column layout -->
-        <Grid Grid.Row="2" ColumnSpacing="24">
+        <Grid Grid.Row="3" ColumnSpacing="24">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="380" MinWidth="300"/>
+                <ColumnDefinition Width="420" MinWidth="300"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Left: Skill list -->
             <Border Style="{StaticResource SurfaceCardStyle}" Padding="0">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Text="Available Skills" FontSize="16" FontWeight="SemiBold" Margin="16,12"
+                    <TextBlock x:Name="ListHeader" Text="All Skills" FontSize="16" FontWeight="SemiBold" Margin="16,12"
                                Foreground="{StaticResource AppAccentTextBrush}"/>
                     <ListView Grid.Row="1" x:Name="SkillsList" Background="Transparent" Padding="8"
                               SelectionChanged="SkillsList_SelectionChanged">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Margin="0,6">
-                                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
-                                               Foreground="{StaticResource AppAccentTextBrush}"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"
-                                               Foreground="{StaticResource AppTextSecondaryBrush}" MaxLines="2"/>
-                                    <Border Background="#3A3A00" CornerRadius="4" Padding="8,2" Margin="0,4,0,0"
-                                            HorizontalAlignment="Left">
-                                        <TextBlock Text="{Binding Category}" FontSize="10"
-                                                   Foreground="{StaticResource AppAccentTextBrush}"/>
-                                    </Border>
-                                </StackPanel>
+                                <Grid Margin="0,4" Padding="8,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="White"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                                                   MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" Spacing="4">
+                                        <Border Background="{Binding BadgeBackground}" CornerRadius="4" Padding="8,2"
+                                                HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding Category}" FontSize="10"
+                                                       Foreground="{Binding BadgeForeground}"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding ToolCount}" FontSize="10"
+                                                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                                                   HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
@@ -70,13 +111,27 @@
 
             <!-- Right: Skill preview -->
             <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}">
-                <Grid RowDefinitions="Auto,Auto,*">
-                    <TextBlock x:Name="PreviewTitle" Text="Select a skill to preview" FontSize="16" FontWeight="SemiBold"
-                               Foreground="{StaticResource AppAccentTextBrush}" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="PreviewDescription" Grid.Row="1" FontSize="12" TextWrapping="Wrap"
+                <Grid RowDefinitions="Auto,Auto,Auto,*">
+                    <TextBlock x:Name="PreviewTitle" Text="Select a skill to preview" FontSize="18" FontWeight="SemiBold"
+                               Foreground="White" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="PreviewDescription" Grid.Row="1" FontSize="13" TextWrapping="Wrap"
                                Foreground="{StaticResource AppTextSecondaryBrush}" Margin="0,0,0,12"
                                Text="Click a skill from the list to see its full system prompt here."/>
-                    <ScrollViewer Grid.Row="2">
+                    <!-- Metadata chips -->
+                    <StackPanel x:Name="PreviewChips" Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,16"
+                                Visibility="Collapsed">
+                        <Border Background="#3A3A00" CornerRadius="4" Padding="8,4">
+                            <TextBlock x:Name="PreviewCategoryChip" FontSize="11"
+                                       Foreground="{StaticResource AppAccentTextBrush}"/>
+                        </Border>
+                        <Border Background="{StaticResource AppInsetBrush}" CornerRadius="4" Padding="8,4">
+                            <TextBlock x:Name="PreviewToolsChip" FontSize="11" Foreground="White"/>
+                        </Border>
+                        <Border Background="{StaticResource AppInsetBrush}" CornerRadius="4" Padding="8,4">
+                            <TextBlock Text="Default model" FontSize="11" Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="3">
                         <TextBlock x:Name="PreviewContent" FontSize="13" FontFamily="Consolas" TextWrapping="Wrap"
                                    Foreground="{StaticResource AppTextSecondaryBrush}" IsTextSelectionEnabled="True"/>
                     </ScrollViewer>

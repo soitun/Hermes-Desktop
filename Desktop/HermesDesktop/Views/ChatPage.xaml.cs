@@ -53,6 +53,9 @@ public sealed partial class ChatPage : Page
         _systemBorderBrush = GetBrush("AppSubtleStrokeBrush");
         _accentLabelBrush = GetBrush("AppAccentTextBrush");
         _secondaryLabelBrush = GetBrush("AppTextSecondaryBrush");
+
+        // Set ItemsSource once in code — avoids x:Bind re-evaluation during layout passes
+        MessagesList.ItemsSource = Messages;
     }
 
     public ObservableCollection<ChatMessageItem> Messages { get; } = new();
@@ -163,6 +166,7 @@ public sealed partial class ChatPage : Page
                 }
             }
 
+            ScrollToBottom();
             SessionIdLabel.Text = $"Session: {sessionId}";
             ConnectionStateText.Text = ResourceLoader.GetString("StatusConnected");
 
@@ -195,17 +199,18 @@ public sealed partial class ChatPage : Page
         var shift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift);
         if (shift.HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
         {
-            // Shift+Enter → newline
-            var pos = PromptTextBox.SelectionStart;
-            PromptTextBox.Text = PromptTextBox.Text.Insert(pos, "\r\n");
-            PromptTextBox.SelectionStart = pos + 2;
+            // Shift+Enter → newline (AcceptsReturn handles this natively)
+            return;
         }
-        else
-        {
-            // Enter → send
-            await SendPromptAsync();
-        }
+
+        // Enter → send (prevent the newline from being inserted)
         e.Handled = true;
+        await SendPromptAsync();
+    }
+
+    private void PromptTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        SendButton.IsEnabled = !string.IsNullOrWhiteSpace(PromptTextBox.Text) && !_isBusy;
     }
 
     private async Task SendPromptAsync()
@@ -216,6 +221,7 @@ public sealed partial class ChatPage : Page
 
         PromptTextBox.Text = "";
         AppendUserMessage(prompt);
+        ScrollToBottom();
 
         // ── Slash command interception ──
         if (prompt.StartsWith("/", StringComparison.Ordinal))
@@ -311,8 +317,7 @@ public sealed partial class ChatPage : Page
             }
 
             // Scroll to the final message
-            if (Messages.Count > 0)
-                MessagesList.ScrollIntoView(Messages[^1]);
+            ScrollToBottom();
 
             ConnectionStateText.Text = "Connected";
         }
@@ -434,9 +439,26 @@ public sealed partial class ChatPage : Page
 
     // ── Permission Mode ──
 
-    private void PermissionModeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private string _permissionMode = "Default";
+
+    private void PermissionModeToggle_Click(object sender, RoutedEventArgs e)
     {
-        // No-op for now — permission mode tracked but not enforced in UI yet
+        var flyout = new MenuFlyout();
+        string[] modes = ["Default", "Plan", "Auto", "Accept Edits", "Bypass"];
+        foreach (var mode in modes)
+        {
+            var item = new MenuFlyoutItem { Text = mode };
+            if (mode == _permissionMode)
+                item.Icon = new FontIcon { Glyph = "\uE73E" }; // checkmark
+            var captured = mode;
+            item.Click += (_, _) =>
+            {
+                _permissionMode = captured;
+                PermissionModeLabel.Text = $"{captured} mode";
+            };
+            flyout.Items.Add(item);
+        }
+        flyout.ShowAt((FrameworkElement)sender);
     }
 
     // ── Connection Check ──
@@ -453,7 +475,7 @@ public sealed partial class ChatPage : Page
     private void SetBusy(bool busy)
     {
         _isBusy = busy;
-        SendButton.IsEnabled = !busy;
+        SendButton.IsEnabled = !busy && !string.IsNullOrWhiteSpace(PromptTextBox.Text);
         PromptTextBox.IsEnabled = !busy;
     }
 
@@ -652,8 +674,13 @@ Write the USER.md content now (markdown format, start with # User Profile):";
     {
         var item = new ChatMessageItem(author, content, align, bg, border, label, type);
         Messages.Add(item);
-        MessagesList.ScrollIntoView(item);
         return item;
+    }
+
+    private void ScrollToBottom()
+    {
+        if (Messages.Count > 0)
+            MessagesList.ScrollIntoView(Messages[^1]);
     }
 
     // ── Typewriter Replay ──
@@ -677,7 +704,7 @@ Write the USER.md content now (markdown format, start with # User Profile):";
         }
 
         item.IsStreaming = false;
-        MessagesList.ScrollIntoView(item);
+        ScrollToBottom();
     }
 
     // ── Panel Splitter ──
