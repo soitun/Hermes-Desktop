@@ -126,6 +126,24 @@ public partial class App : Application
             sp.GetRequiredService<IChatClient>(),
             sp.GetRequiredService<ILogger<SoulExtractor>>()));
 
+        // Soul registry (browsable soul templates)
+        var soulsSearchPaths = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "skills", "souls"),       // Shipped with app
+            Path.Combine(projectDir, "souls"),                               // User-installed souls
+            Path.Combine(Path.GetDirectoryName(hermesHome) ?? hermesHome, "hermes-agent", "skills", "souls"), // Hermes CLI souls
+        };
+        services.AddSingleton(sp => new SoulRegistry(
+            soulsSearchPaths,
+            sp.GetRequiredService<ILogger<SoulRegistry>>()));
+
+        // Agent profile manager (multi-agent configurations)
+        var agentsDir = Path.Combine(projectDir, "agents");
+        services.AddSingleton(sp => new AgentProfileManager(
+            agentsDir,
+            sp.GetRequiredService<SoulService>(),
+            sp.GetRequiredService<ILogger<AgentProfileManager>>()));
+
         // Token budget & Prompt builder for Context Runtime
         services.AddSingleton(sp => new TokenBudget(maxTokens: 8000, recentTurnWindow: 6));
         services.AddSingleton(sp => new PromptBuilder(SystemPrompts.Default));

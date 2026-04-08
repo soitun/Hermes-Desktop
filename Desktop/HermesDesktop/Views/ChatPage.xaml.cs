@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hermes.Agent.Core;
 using Hermes.Agent.Skills;
+using Hermes.Agent.Soul;
 using Hermes.Agent.Transcript;
 using HermesDesktop.Models;
 using HermesDesktop.Services;
@@ -26,6 +27,7 @@ public sealed partial class ChatPage : Page
     private readonly Agent _agent = App.Services.GetRequiredService<Agent>();
     private readonly TranscriptStore _transcriptStore = App.Services.GetRequiredService<TranscriptStore>();
     private readonly SessionRecorder _sessionRecorder = new();
+    private readonly SoulService _soulService = App.Services.GetRequiredService<SoulService>();
     private readonly Brush _assistantBackgroundBrush;
     private readonly Brush _assistantBorderBrush;
     private readonly Brush _userBackgroundBrush;
@@ -37,6 +39,7 @@ public sealed partial class ChatPage : Page
 
     private bool _initialized;
     private bool _isBusy;
+    private OnboardingState _onboarding = OnboardingState.None;
 
     public ChatPage()
     {
@@ -117,7 +120,10 @@ public sealed partial class ChatPage : Page
             }
         };
 
-        AppendWelcomeMessage();
+        if (_soulService.IsFirstRun())
+            ShowOnboarding();
+        else
+            AppendWelcomeMessage();
 
         await RefreshConnectionStatusAsync();
     }
@@ -215,6 +221,13 @@ public sealed partial class ChatPage : Page
         if (prompt.StartsWith("/", StringComparison.Ordinal))
         {
             await HandleSlashCommandAsync(prompt);
+            return;
+        }
+
+        // ── Onboarding interception ──
+        if (_onboarding != OnboardingState.None)
+        {
+            await HandleOnboardingInputAsync(prompt);
             return;
         }
 
@@ -409,8 +422,12 @@ public sealed partial class ChatPage : Page
         _sessionRecorder.StopRecording();
         Messages.Clear();
         SessionIdLabel.Text = "New Session";
+        _onboarding = OnboardingState.None;
 
-        AppendWelcomeMessage();
+        if (_soulService.IsFirstRun())
+            ShowOnboarding();
+        else
+            AppendWelcomeMessage();
 
         await RefreshConnectionStatusAsync();
     }
@@ -481,6 +498,153 @@ public sealed partial class ChatPage : Page
             "  Ready. Type a message or /help for commands.";
 
         AppendSystemMessage(caduceus);
+    }
+
+    // ── First-Run Onboarding ──
+
+    private void ShowOnboarding()
+    {
+        // Don't use chat-based onboarding — point to the Agent tab instead
+        _onboarding = OnboardingState.None;
+
+        AppendWelcomeMessage();
+        AppendAssistantMessage(
+            "Welcome! This is your first time here.\n\n" +
+            "I'm Hermes — your AI agent. Before we start, you can set up my identity " +
+            "and tell me about yourself.\n\n" +
+            "Click the Agent tab in the right panel to:\n" +
+            "  - Browse soul templates (12 different personalities)\n" +
+            "  - Customize my identity, values, and working style\n" +
+            "  - Tell me about you so I can be a better assistant\n" +
+            "  - Create multiple agent configurations\n\n" +
+            "Or just start chatting — I work great with my default soul too.");
+
+        // Mark as configured so onboarding doesn't repeat
+        _ = MarkConfiguredAsync();
+    }
+
+    private async System.Threading.Tasks.Task MarkConfiguredAsync()
+    {
+        try
+        {
+            var current = await _soulService.LoadFileAsync(SoulFileType.Soul);
+            if (current.Contains("<!-- UNCONFIGURED -->"))
+                await _soulService.SaveFileAsync(SoulFileType.Soul, current.Replace("<!-- UNCONFIGURED -->\n", ""));
+
+            var userCurrent = await _soulService.LoadFileAsync(SoulFileType.User);
+            if (userCurrent.Contains("<!-- UNCONFIGURED -->"))
+                await _soulService.SaveFileAsync(SoulFileType.User, userCurrent.Replace("<!-- UNCONFIGURED -->\n", ""));
+        }
+        catch { /* non-critical */ }
+    }
+
+    private async Task HandleOnboardingInputAsync(string input)
+    {
+        if (_onboarding == OnboardingState.AwaitingSoulInput)
+        {
+            if (!string.Equals(input, "default", StringComparison.OrdinalIgnoreCase))
+            {
+                // Use the LLM to generate a personalized SOUL.md based on user preferences
+                SetBusy(true);
+                ShowThinking(true);
+
+                try
+                {
+                    var prompt = $@"The user wants to customize their AI agent's identity. Based on their preferences below, generate a SOUL.md document in markdown format. Include sections for: Core Identity, Values, Communication Style, and Working Style. Be specific and personal, not generic.
+
+User's preferences: {input}
+
+Write the SOUL.md content now (markdown format, start with # Hermes Agent Identity):";
+
+                    var reply = await Task.Run(() => _chatService.SendAsync(prompt, CancellationToken.None));
+                    ShowThinking(false);
+
+                    if (!string.IsNullOrWhiteSpace(reply.Response))
+                    {
+                        await _soulService.SaveFileAsync(SoulFileType.Soul, reply.Response);
+                        AppendAssistantMessage("I've saved your customized soul. Here's who I'll be:\n\n" +
+                            reply.Response.Substring(0, Math.Min(500, reply.Response.Length)) +
+                            (reply.Response.Length > 500 ? "\n\n...(saved in full to SOUL.md)" : ""));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ShowThinking(false);
+                    AppendSystemMessage($"Error generating soul: {ex.Message}");
+                }
+                finally
+                {
+                    SetBusy(false);
+                }
+            }
+            else
+            {
+                // Remove the UNCONFIGURED marker from the default template
+                var current = await _soulService.LoadFileAsync(SoulFileType.Soul);
+                await _soulService.SaveFileAsync(SoulFileType.Soul, current.Replace("<!-- UNCONFIGURED -->\n", ""));
+                AppendAssistantMessage("Keeping my default soul. I'm direct, honest, and action-oriented.");
+            }
+
+            // Move to user profile phase
+            _onboarding = OnboardingState.AwaitingUserInput;
+            AppendAssistantMessage(
+                "Now, tell me about you.\n\n" +
+                "I persist across sessions through memory files, so what you share here helps me be a better agent for you every time.\n\n" +
+                "  - What's your name and what do you do?\n" +
+                "  - What's your technical skill level?\n" +
+                "  - How do you prefer to communicate? (detailed explanations? just the answer?)\n" +
+                "  - Anything else I should know about working with you?\n\n" +
+                "Or say \"skip\" to fill this in later.");
+            return;
+        }
+
+        if (_onboarding == OnboardingState.AwaitingUserInput)
+        {
+            if (!string.Equals(input, "skip", StringComparison.OrdinalIgnoreCase))
+            {
+                SetBusy(true);
+                ShowThinking(true);
+
+                try
+                {
+                    var prompt = $@"The user has described themselves for their AI agent's USER.md profile. Generate a structured user profile in markdown format based on what they shared. Include sections: Who They Are, Technical Expertise, How They Work, What I've Learned.
+
+User's description: {input}
+
+Write the USER.md content now (markdown format, start with # User Profile):";
+
+                    var reply = await Task.Run(() => _chatService.SendAsync(prompt, CancellationToken.None));
+                    ShowThinking(false);
+
+                    if (!string.IsNullOrWhiteSpace(reply.Response))
+                    {
+                        await _soulService.SaveFileAsync(SoulFileType.User, reply.Response);
+                        AppendAssistantMessage("Got it. I've saved your profile. I'll remember this across sessions.\n\n" +
+                            "You can always update your profile in the Memory tab > Soul.\n\n" +
+                            "Setup complete. I'm ready to work. What would you like to do?");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ShowThinking(false);
+                    AppendSystemMessage($"Error saving profile: {ex.Message}");
+                }
+                finally
+                {
+                    SetBusy(false);
+                }
+            }
+            else
+            {
+                var current = await _soulService.LoadFileAsync(SoulFileType.User);
+                await _soulService.SaveFileAsync(SoulFileType.User, current.Replace("<!-- UNCONFIGURED -->\n", ""));
+                AppendAssistantMessage("No problem — you can fill in your profile anytime in the Memory tab > Soul.\n\n" +
+                    "Setup complete. I'm ready to work. What would you like to do?");
+            }
+
+            _onboarding = OnboardingState.None;
+            return;
+        }
     }
 
     private ChatMessageItem AddMessage(string author, string content, HorizontalAlignment align,
@@ -574,33 +738,32 @@ public sealed partial class ChatPage : Page
 
         SessionPanelView.Visibility = Visibility.Collapsed;
         FileBrowserPanelView.Visibility = Visibility.Collapsed;
-        SkillsPanelView.Visibility = Visibility.Collapsed;
-        MemoryPanelView.Visibility = Visibility.Collapsed;
         TaskPanelView.Visibility = Visibility.Collapsed;
-        BuddyPanelView.Visibility = Visibility.Collapsed;
         ReplayPanelView.Visibility = Visibility.Collapsed;
 
         var accent = GetBrush("AppAccentTextBrush");
         var muted = GetBrush("AppTextSecondaryBrush");
         TabSessions.Foreground = muted;
         TabFiles.Foreground = muted;
-        TabSkills.Foreground = muted;
-        TabMemory.Foreground = muted;
         TabTasks.Foreground = muted;
-        TabBuddy.Foreground = muted;
         TabReplay.Foreground = muted;
 
         switch (tag)
         {
             case "sessions": SessionPanelView.Visibility = Visibility.Visible; TabSessions.Foreground = accent; break;
             case "files": FileBrowserPanelView.Visibility = Visibility.Visible; TabFiles.Foreground = accent; break;
-            case "skills": SkillsPanelView.Visibility = Visibility.Visible; TabSkills.Foreground = accent; break;
-            case "memory": MemoryPanelView.Visibility = Visibility.Visible; TabMemory.Foreground = accent; break;
             case "tasks": TaskPanelView.Visibility = Visibility.Visible; TabTasks.Foreground = accent; break;
-            case "buddy": BuddyPanelView.Visibility = Visibility.Visible; TabBuddy.Foreground = accent; break;
             case "replay": ReplayPanelView.Visibility = Visibility.Visible; TabReplay.Foreground = accent; break;
         }
     }
 
     private static Brush GetBrush(string key) => (Brush)Application.Current.Resources[key];
+}
+
+/// <summary>Onboarding state machine for first-run soul setup.</summary>
+internal enum OnboardingState
+{
+    None,
+    AwaitingSoulInput,
+    AwaitingUserInput
 }

@@ -123,6 +123,18 @@
   <data name="ChatNavItem.Content" xml:space="preserve">
     <value>Chat</value>
   </data>
+  <data name="AgentNavItem.Content" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="SkillsNavItem.Content" xml:space="preserve">
+    <value>Skills</value>
+  </data>
+  <data name="MemoryNavItem.Content" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="BuddyNavItem.Content" xml:space="preserve">
+    <value>Buddy</value>
+  </data>
   <data name="IntegrationsNavItem.Content" xml:space="preserve">
     <value>Integrations</value>
   </data>

@@ -6,313 +6,190 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Background="Transparent"
+    Loaded="OnPageLoaded"
     mc:Ignorable="d"
     NavigationCacheMode="Required">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Padding="20,12,24,28" ColumnSpacing="14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="292" />
-            </Grid.ColumnDefinitions>
+        <StackPanel Padding="32,24,32,40" Spacing="20">
 
-            <StackPanel Grid.Column="0" Spacing="14">
-                <Border Style="{StaticResource SurfaceCardStyle}" Padding="0">
-                    <Grid ColumnSpacing="16" Padding="18,18,18,18">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="4" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
+            <!-- ═══ KPI Stats Row ═══ -->
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                        <Border
-                            Grid.Column="0"
-                            Background="{StaticResource AppAccentGradientVerticalBrush}"
-                            CornerRadius="999" />
+                <!-- Sessions -->
+                <Border Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Sessions" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                        <TextBlock x:Name="SessionCountText" Text="0" FontSize="28" FontWeight="Bold"
+                                   Foreground="{StaticResource AppAccentTextBrush}"/>
+                        <TextBlock Text="total conversations" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}" Opacity="0.6"/>
+                    </StackPanel>
+                </Border>
 
-                        <StackPanel
-                            Grid.Column="1"
-                            Spacing="12">
-                            <TextBlock
-                                x:Uid="DashboardHeroEyebrow"
-                                Style="{StaticResource PageEyebrowTextStyle}" />
-                            <TextBlock
-                                x:Uid="DashboardHeroTitle"
-                                Style="{StaticResource PageTitleTextStyle}"
-                                MaxWidth="760" />
-                            <TextBlock
-                                x:Uid="DashboardHeroSubtitle"
-                                Style="{StaticResource BodySecondaryTextStyle}"
-                                MaxWidth="760" />
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button
-                                    x:Uid="DashboardLaunchChatButton"
-                                    AccessKey="L"
-                                    AutomationProperties.AutomationId="DashboardLaunchChatButton"
-                                    Background="{StaticResource AppAccentGradientBrush}"
-                                    BorderBrush="{StaticResource AppAccentDarkBrush}"
-                                    Click="LaunchHermesChat_Click"
-                                    Foreground="#0E1720" />
-                                <Button
-                                    x:Uid="DashboardOpenLogsButton"
-                                    AccessKey="G"
-                                    AutomationProperties.AutomationId="DashboardOpenLogsButton"
-                                    Background="{StaticResource AppInsetBrush}"
-                                    BorderBrush="{StaticResource AppStrokeBrush}"
-                                    Click="OpenLogs_Click"
-                                    Foreground="White" />
-                                <Button
-                                    x:Uid="DashboardOpenConfigButton"
-                                    AccessKey="C"
-                                    AutomationProperties.AutomationId="DashboardOpenConfigButton"
-                                    Background="{StaticResource AppInsetBrush}"
-                                    BorderBrush="{StaticResource AppStrokeBrush}"
-                                    Click="OpenConfig_Click"
-                                    Foreground="White" />
+                <!-- Tools -->
+                <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Tools" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                        <TextBlock x:Name="ToolCountText" Text="0" FontSize="28" FontWeight="Bold"
+                                   Foreground="#6BCB77"/>
+                        <TextBlock Text="registered" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}" Opacity="0.6"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Skills -->
+                <Border Grid.Column="2" Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Skills" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                        <TextBlock x:Name="SkillCountText" Text="0" FontSize="28" FontWeight="Bold"
+                                   Foreground="#818CF8"/>
+                        <TextBlock Text="available" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}" Opacity="0.6"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- LLM Status -->
+                <Border Grid.Column="3" Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="LLM Status" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Ellipse x:Name="LlmStatusDot" Width="10" Height="10" Fill="#6BCB77" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="LlmStatusText" Text="Checking..." FontSize="20" FontWeight="Bold"/>
+                        </StackPanel>
+                        <TextBlock x:Name="LlmModelText" Text="" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}" Opacity="0.6"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ═══ Platforms & Model Row ═══ -->
+            <Grid ColumnSpacing="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Platforms & Services -->
+                <Border Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="Platforms &amp; Services" FontSize="16" FontWeight="SemiBold"/>
+
+                        <!-- Platform badges -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Messaging" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <StackPanel x:Name="PlatformBadges" Orientation="Horizontal" Spacing="8">
+                                <!-- Populated in code-behind -->
                             </StackPanel>
                         </StackPanel>
-                    </Grid>
-                </Border>
 
-                <Border Style="{StaticResource SurfaceCardStyle}" Padding="0">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <TextBlock
-                            x:Uid="DashboardPathsSectionTitle"
-                            Grid.Row="0"
-                            Margin="18,16,18,14"
-                            Style="{StaticResource SectionTitleTextStyle}" />
-
-                        <Border
-                            Grid.Row="1"
-                            BorderBrush="{StaticResource AppStrokeBrush}"
-                            BorderThickness="0,1,0,0" />
-
-                        <Grid
-                            Grid.Row="1"
-                            Margin="18,16,18,16"
-                            ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="152" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                x:Uid="DashboardHermesHomeLabel"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Text="{x:Bind HermesHomePath, Mode=OneTime}"
-                                TextWrapping="WrapWholeWords" />
-                        </Grid>
-
-                        <Border
-                            Grid.Row="2"
-                            BorderBrush="{StaticResource AppStrokeBrush}"
-                            BorderThickness="0,1,0,0" />
-
-                        <Grid
-                            Grid.Row="2"
-                            Margin="18,16,18,16"
-                            ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="152" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                x:Uid="DashboardConfigLabel"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Text="{x:Bind HermesConfigPath, Mode=OneTime}"
-                                TextWrapping="WrapWholeWords" />
-                        </Grid>
-
-                        <Border
-                            Grid.Row="3"
-                            BorderBrush="{StaticResource AppStrokeBrush}"
-                            BorderThickness="0,1,0,0" />
-
-                        <Grid
-                            Grid.Row="3"
-                            Margin="18,16,18,16"
-                            ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="152" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                x:Uid="DashboardLogsLabel"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Text="{x:Bind HermesLogsPath, Mode=OneTime}"
-                                TextWrapping="WrapWholeWords" />
-                        </Grid>
-
-                        <Border
-                            Grid.Row="4"
-                            BorderBrush="{StaticResource AppStrokeBrush}"
-                            BorderThickness="0,1,0,0" />
-
-                        <Grid
-                            Grid.Row="4"
-                            Margin="18,16,18,18"
-                            ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="152" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                x:Uid="DashboardWorkspaceLabel"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Text="{x:Bind HermesWorkspacePath, Mode=OneTime}"
-                                TextWrapping="WrapWholeWords" />
-                        </Grid>
-                    </Grid>
-                </Border>
-            </StackPanel>
-
-            <Border
-                Grid.Column="1"
-                Style="{StaticResource SurfaceCardStyle}"
-                Padding="0">
-                <StackPanel>
-                    <!-- Tab bar -->
-                    <StackPanel
-                        Orientation="Horizontal"
-                        Padding="16,14,16,10"
-                        Spacing="14">
-                        <StackPanel x:Name="StatusTabHeader" Spacing="5" Tapped="StatusTab_Click" Background="Transparent">
-                            <TextBlock x:Name="StatusTabText" Text="Status"
-                                Foreground="{StaticResource AppAccentTextBrush}"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <Border x:Name="StatusTabIndicator" Width="38" Height="2"
-                                Background="{StaticResource AppAccentBrush}" CornerRadius="999" />
-                        </StackPanel>
-                        <StackPanel x:Name="ModelTabHeader" Spacing="5" Tapped="ModelTab_Click" Background="Transparent">
-                            <TextBlock x:Name="ModelTabText" Text="Model"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <Border x:Name="ModelTabIndicator" Width="38" Height="2"
-                                Background="Transparent" CornerRadius="999" />
-                        </StackPanel>
-                        <StackPanel x:Name="ShellTabHeader" Spacing="5" Tapped="ShellTab_Click" Background="Transparent">
-                            <TextBlock x:Name="ShellTabText" Text="Shell"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <Border x:Name="ShellTabIndicator" Width="38" Height="2"
-                                Background="Transparent" CornerRadius="999" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-
-                    <!-- ═══ STATUS TAB CONTENT ═══ -->
-                    <StackPanel x:Name="StatusPanel">
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock x:Uid="DashboardProviderLabel" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Style="{StaticResource MetricValueTextStyle}" Text="{x:Bind ModelProvider, Mode=OneTime}" />
-                            <TextBlock Style="{StaticResource BodySecondaryTextStyle}" Text="{x:Bind InstallSummary, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock x:Uid="DashboardModelLabel" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Style="{StaticResource MetricValueTextStyle}" Text="{x:Bind DefaultModel, Mode=OneTime}" />
-                            <TextBlock Style="{StaticResource BodySecondaryTextStyle}" Text="{x:Bind BaseUrl, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock x:Uid="DashboardGatewayLabel" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Style="{StaticResource MetricValueTextStyle}" Text="{x:Bind MessagingState, Mode=OneTime}" />
-                            <TextBlock Style="{StaticResource BodySecondaryTextStyle}" Text="{x:Bind MessagingSummary, Mode=OneTime}" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- ═══ MODEL TAB CONTENT ═══ -->
-                    <StackPanel x:Name="ModelPanel" Visibility="Collapsed">
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Provider" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Style="{StaticResource MetricValueTextStyle}" Text="{x:Bind ModelProvider, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Default model" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Style="{StaticResource MetricValueTextStyle}" Text="{x:Bind DefaultModel, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Base URL" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Text="{x:Bind BaseUrl, Mode=OneTime}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Port" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Text="{x:Bind ModelPort, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="API Key" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Text="{x:Bind ApiKeyMasked, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="10">
-                            <Button Content="Test Connection" Click="TestConnection_Click"
-                                Background="{StaticResource AppAccentBrush}"
-                                Foreground="{StaticResource AppWindowBackgroundBrush}"
-                                CornerRadius="6" Padding="14,8" />
-                            <TextBlock x:Name="TestConnectionResult"
-                                Style="{StaticResource BodySecondaryTextStyle}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- ═══ SHELL TAB CONTENT ═══ -->
-                    <StackPanel x:Name="ShellPanel" Visibility="Collapsed">
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="CLI" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Style="{StaticResource MetricValueTextStyle}" Text="{x:Bind CliState, Mode=OneTime}" />
-                            <TextBlock Style="{StaticResource BodySecondaryTextStyle}" Text="{x:Bind InstallSummary, Mode=OneTime}" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Hermes home" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Text="{x:Bind HermesHomePath, Mode=OneTime}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Config file" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Text="{x:Bind HermesConfigPath, Mode=OneTime}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="6">
-                            <TextBlock Text="Logs folder" Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock Text="{x:Bind HermesLogsPath, Mode=OneTime}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border BorderBrush="{StaticResource AppStrokeBrush}" BorderThickness="0,1,0,0" />
-                        <StackPanel Padding="16,16,16,14" Spacing="10">
-                            <TextBlock Text="Quick actions" Style="{StaticResource SectionTitleTextStyle}" />
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Launch Chat" Click="LaunchHermesChat_Click"
-                                    Background="{StaticResource AppAccentBrush}"
-                                    Foreground="{StaticResource AppWindowBackgroundBrush}"
-                                    CornerRadius="6" Padding="14,8" />
-                                <Button Content="Open Logs" Click="OpenLogs_Click"
-                                    CornerRadius="6" Padding="14,8" />
-                                <Button Content="Open Config" Click="OpenConfig_Click"
-                                    CornerRadius="6" Padding="14,8" />
+                        <!-- Services -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Services" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <StackPanel x:Name="ServiceBadges" Orientation="Horizontal" Spacing="8">
+                                <!-- Populated in code-behind -->
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                </StackPanel>
-            </Border>
-        </Grid>
+                </Border>
+
+                <!-- Model Info -->
+                <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Model Configuration" FontSize="16" FontWeight="SemiBold"/>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Provider" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock x:Name="ProviderText" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AppAccentTextBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Model" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock x:Name="ModelNameText" FontSize="14" FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Endpoint" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock x:Name="EndpointText" FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <Button Content="Test Connection" Click="TestConnection_Click"
+                                Background="{StaticResource AppAccentGradientBrush}" Foreground="#16110D"
+                                Padding="16,8" FontSize="12"/>
+                        <TextBlock x:Name="TestConnectionResult" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ═══ Recent Activity & Paths Row ═══ -->
+            <Grid ColumnSpacing="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Recent Sessions -->
+                <Border Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="Recent Activity" FontSize="16" FontWeight="SemiBold"/>
+                            <Button Content="Open Chat" Click="LaunchHermesChat_Click" FontSize="11" Padding="10,4"
+                                    Background="{StaticResource AppAccentGradientBrush}" Foreground="#16110D" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ListView x:Name="RecentSessionsList" Background="Transparent" SelectionMode="None" MaxHeight="250">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,4" ColumnDefinitions="Auto,*,Auto">
+                                        <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Preview}" FontSize="13" MaxLines="1" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding MessageCount}" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding TimeAgo}" FontSize="11"
+                                                   Foreground="{StaticResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <TextBlock x:Name="NoSessionsText" Text="No sessions yet. Start a conversation in Chat."
+                                   FontSize="12" Opacity="0.5" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- System Paths -->
+                <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="System" FontSize="16" FontWeight="SemiBold"/>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Hermes Home" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock Text="{x:Bind HermesHomePath, Mode=OneTime}" FontSize="12" TextWrapping="Wrap" FontFamily="Consolas"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Config" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock Text="{x:Bind HermesConfigPath, Mode=OneTime}" FontSize="12" TextWrapping="Wrap" FontFamily="Consolas"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Souls" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock x:Name="ActiveSoulText" FontSize="12" FontFamily="Consolas"
+                                       Foreground="{StaticResource AppAccentTextBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Open Logs" Click="OpenLogs_Click" FontSize="11" Padding="10,4"
+                                    Background="{StaticResource AppInsetBrush}" BorderBrush="{StaticResource AppStrokeBrush}" Foreground="White"/>
+                            <Button Content="Open Config" Click="OpenConfig_Click" FontSize="11" Padding="10,4"
+                                    Background="{StaticResource AppInsetBrush}" BorderBrush="{StaticResource AppStrokeBrush}" Foreground="White"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
     </ScrollViewer>
 </Page>

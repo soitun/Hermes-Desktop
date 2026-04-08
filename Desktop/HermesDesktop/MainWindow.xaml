@@ -65,6 +65,38 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem
+                    x:Name="AgentNavItem"
+                    x:Uid="AgentNavItem"
+                    Tag="agent">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="ContactInfo" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="SkillsNavItem"
+                    x:Uid="SkillsNavItem"
+                    Tag="skills">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Library" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="MemoryNavItem"
+                    x:Uid="MemoryNavItem"
+                    Tag="memory">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Document" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="BuddyNavItem"
+                    x:Uid="BuddyNavItem"
+                    Tag="buddy">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Emoji2" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
                     x:Name="IntegrationsNavItem"
                     x:Uid="IntegrationsNavItem"
                     Tag="integrations">
