@@ -27,6 +27,22 @@ public sealed class Agent : IAgent
     /// <summary>Safety limit to prevent infinite tool loops.</summary>
     public int MaxToolIterations { get; set; } = 25;
 
+    /// <summary>Max concurrent workers for parallel tool execution.</summary>
+    private const int MaxParallelWorkers = 8;
+
+    /// <summary>Read-only tools safe for concurrent execution.</summary>
+    private static readonly HashSet<string> ParallelSafeTools = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "read_file", "glob", "grep", "web_fetch", "web_search",
+        "session_search", "skill_invoke", "memory", "lsp"
+    };
+
+    /// <summary>Tools that must never run in parallel.</summary>
+    private static readonly HashSet<string> NeverParallelTools = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ask_user"
+    };
+
     /// <summary>Fired when an activity entry is added or updated.</summary>
     public event Action<ActivityEntry>? ActivityEntryAdded;
 
@@ -213,8 +229,51 @@ public sealed class Agent : IAgent
             if (_transcripts is not null)
                 await _transcripts.SaveMessageAsync(session.Id, assistantToolMsg, ct);
 
-            // Execute each tool call and append results
-            foreach (var toolCall in response.ToolCalls!)
+            // Execute tool calls — parallel when safe, sequential otherwise
+            var toolCallsList = response.ToolCalls!;
+
+            if (ShouldParallelize(toolCallsList))
+            {
+                // ── Parallel execution path (read-only tools only) ──
+                _logger.LogInformation("Executing {Count} tool calls in parallel", toolCallsList.Count);
+                var parallelResults = await ExecuteToolCallsParallelAsync(toolCallsList, ct);
+
+                foreach (var (toolCall, result, durationMs) in parallelResults)
+                {
+                    var entry = new ActivityEntry
+                    {
+                        ToolName = toolCall.Name,
+                        ToolCallId = toolCall.Id,
+                        InputSummary = Truncate(toolCall.Arguments, 200),
+                        Status = result.Success ? ActivityStatus.Success : ActivityStatus.Failed,
+                        OutputSummary = Truncate(result.Content, 200),
+                        DurationMs = durationMs
+                    };
+                    ActivityLog.Add(entry);
+                    ActivityEntryAdded?.Invoke(entry);
+                    if (_transcripts is not null)
+                        await _transcripts.SaveActivityAsync(session.Id, entry, ct);
+
+                    var resultContent = result.Content;
+                    if (SecretScanner.ContainsSecrets(resultContent))
+                        resultContent = SecretScanner.RedactSecrets(resultContent);
+
+                    var toolResultMsg = new Message
+                    {
+                        Role = "tool",
+                        Content = resultContent,
+                        ToolCallId = toolCall.Id,
+                        ToolName = toolCall.Name
+                    };
+                    session.AddMessage(toolResultMsg);
+                    if (_transcripts is not null)
+                        await _transcripts.SaveMessageAsync(session.Id, toolResultMsg, ct);
+                }
+            }
+            else
+            {
+            // ── Sequential execution path (default, with permissions) ──
+            foreach (var toolCall in toolCallsList)
             {
                 // ── Permission gate ──
                 if (_permissions is not null)
@@ -376,6 +435,7 @@ public sealed class Agent : IAgent
                 if (_transcripts is not null)
                     await _transcripts.SaveMessageAsync(session.Id, toolResultMsg, ct);
             }
+            } // end else (sequential path)
         }
 
         _logger.LogWarning("Hit max tool iterations ({Max}) for session {SessionId}", MaxToolIterations, session.Id);
@@ -704,6 +764,39 @@ public sealed class Agent : IAgent
         session.AddMessage(fallbackMsg);
         if (_transcripts is not null)
             await _transcripts.SaveMessageAsync(session.Id, fallbackMsg, ct);
+    }
+
+    /// <summary>Determine if a batch of tool calls can be safely parallelized.</summary>
+    private static bool ShouldParallelize(IReadOnlyList<ToolCall> toolCalls)
+    {
+        if (toolCalls.Count <= 1) return false;
+        if (toolCalls.Any(tc => NeverParallelTools.Contains(tc.Name))) return false;
+        return toolCalls.All(tc => ParallelSafeTools.Contains(tc.Name));
+    }
+
+    /// <summary>Execute a batch of tool calls in parallel using a semaphore to limit concurrency.</summary>
+    private async Task<List<(ToolCall Call, ToolResult Result, long DurationMs)>> ExecuteToolCallsParallelAsync(
+        IReadOnlyList<ToolCall> toolCalls, CancellationToken ct)
+    {
+        using var semaphore = new SemaphoreSlim(MaxParallelWorkers);
+        var tasks = toolCalls.Select(async toolCall =>
+        {
+            await semaphore.WaitAsync(ct);
+            try
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var result = await ExecuteToolCallAsync(toolCall, ct);
+                sw.Stop();
+                return (Call: toolCall, Result: result, DurationMs: sw.ElapsedMilliseconds);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }).ToList();
+
+        var results = await Task.WhenAll(tasks);
+        return results.ToList();
     }
 
     private async Task<ToolResult> ExecuteToolCallAsync(ToolCall toolCall, CancellationToken ct)
