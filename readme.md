@@ -221,7 +221,7 @@ Hermes.CS/
 │   ├── security/                # SSRF, secret scanning, shell analysis
 │   └── Hermes.Core.csproj
 ├── Desktop/
-│   └── HermesDesktop/           # WinUI 3 desktop application
+│   └── HermesDesktop/           # WinUI 3 desktop application (canonical)
 │       ├── Models/              # View models (ChatMessageItem)
 │       ├── Services/            # HermesChatService, HermesEnvironment
 │       ├── Views/               # 8 full pages + panel controls
