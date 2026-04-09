@@ -140,6 +140,21 @@ public sealed partial class ChatPage : Page
 
     // ── Model Switcher ──
 
+    private static string ReadApiKeyForProvider(string provider)
+    {
+        return provider.ToLowerInvariant() switch
+        {
+            "anthropic" or "claude" =>
+                HermesEnvironment.ReadConfigSetting("model", "api_key")
+                ?? HermesEnvironment.ReadConfigSetting("provider_keys", "anthropic") ?? "",
+            "openai" =>
+                HermesEnvironment.ReadConfigSetting("provider_keys", "openai") ?? "",
+            "qwen" =>
+                HermesEnvironment.ReadConfigSetting("provider_keys", "qwen") ?? "",
+            _ => "",
+        };
+    }
+
     private void PopulateModelSwitcher()
     {
         _suppressModelSwitch = true;
@@ -172,7 +187,7 @@ public sealed partial class ChatPage : Page
             ModelSwitchCombo.Items.Add(new ComboBoxItem
             {
                 Content = p.Label,
-                Tag = $"{p.Provider}|{p.Model}|{p.BaseUrl}|{p.ApiKey}"
+                Tag = $"{p.Provider}|{p.Model}|{p.BaseUrl}"
             });
             if (string.Equals(p.Model, currentModel, StringComparison.OrdinalIgnoreCase))
                 selectedIdx = i;
@@ -188,13 +203,13 @@ public sealed partial class ChatPage : Page
             return;
 
         var tag = item.Tag?.ToString() ?? "";
-        var parts = tag.Split('|', 4);
+        var parts = tag.Split('|', 3);
         if (parts.Length < 3) return;
 
         var provider = parts[0];
         var model = parts[1];
         var baseUrl = parts[2];
-        var apiKey = parts.Length > 3 ? parts[3] : "";
+        var apiKey = ReadApiKeyForProvider(provider);
 
         var newConfig = new LlmConfig
         {

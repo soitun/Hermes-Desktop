@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 public sealed class ChatClientFactory
 {
-    private readonly HttpClient _httpClient;
     private readonly CredentialPool? _credentialPool;
     private readonly ILogger<ChatClientFactory> _logger;
 
@@ -20,12 +19,10 @@ public sealed class ChatClientFactory
 
     public ChatClientFactory(
         LlmConfig initialConfig,
-        HttpClient httpClient,
         ILogger<ChatClientFactory> logger,
         CredentialPool? credentialPool = null)
     {
         _currentConfig = initialConfig;
-        _httpClient = httpClient;
         _credentialPool = credentialPool;
         _logger = logger;
         _currentClient = CreateClient(initialConfig);

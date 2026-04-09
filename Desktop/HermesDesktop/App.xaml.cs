@@ -71,7 +71,6 @@ public partial class App : Application
         // Pattern from Claude Code: model read from state at call time, fresh client on swap
         services.AddSingleton(sp => new ChatClientFactory(
             sp.GetRequiredService<LlmConfig>(),
-            new HttpClient { Timeout = TimeSpan.FromMinutes(5) },
             sp.GetRequiredService<ILogger<ChatClientFactory>>(),
             sp.GetService<CredentialPool>()));
 
