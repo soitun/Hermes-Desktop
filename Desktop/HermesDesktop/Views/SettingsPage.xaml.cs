@@ -40,27 +40,20 @@ public sealed partial class SettingsPage : Page
     {
         // Pre-populate fields from current config
         var provider = HermesEnvironment.ModelProvider.ToLowerInvariant();
-        var matchIndex = 6; // default to "local"
-        for (int i = 0; i < ProviderCombo.Items.Count; i++)
-        {
-            if (ProviderCombo.Items[i] is ComboBoxItem item &&
-                string.Equals(item.Tag?.ToString(), provider, StringComparison.OrdinalIgnoreCase))
-            {
-                matchIndex = i;
-                break;
-            }
-        }
-        // Handle legacy "custom" tag mapping to "local"
-        if (provider == "custom")
-            matchIndex = 6;
-
-        ProviderCombo.SelectedIndex = matchIndex;
+        var normalizedProvider = provider == "custom" ? "local" : provider;
+        SelectComboByTag(ProviderCombo, normalizedProvider, fallbackIndex: 6);
 
         BaseUrlBox.Text = HermesEnvironment.ModelBaseUrl;
         ModelBox.Text = HermesEnvironment.DefaultModel;
         ApiKeyBox.Password = HermesEnvironment.ModelApiKey ?? "";
+        AuthHeaderBox.Text = HermesEnvironment.ModelAuthHeader;
+        AuthSchemeBox.Text = HermesEnvironment.ModelAuthScheme;
+        AuthTokenEnvBox.Text = HermesEnvironment.ModelAuthTokenEnv ?? "";
+        AuthTokenCommandBox.Text = HermesEnvironment.ModelAuthTokenCommand ?? "";
+        SelectComboByTag(AuthModeCombo, HermesEnvironment.ModelAuthMode, fallbackIndex: 0);
+        UpdateAuthFieldState(HermesEnvironment.ModelAuthMode);
 
-        PopulateModelCombo(provider);
+        PopulateModelCombo(normalizedProvider);
         SelectCurrentModel(HermesEnvironment.DefaultModel);
     }
 
@@ -133,6 +126,12 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private void AuthModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var authMode = (AuthModeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "api_key";
+        UpdateAuthFieldState(authMode);
+    }
+
     private async void SaveModelConfig_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -141,6 +140,11 @@ public sealed partial class SettingsPage : Page
             var baseUrl = BaseUrlBox.Text.Trim();
             var model = ModelBox.Text.Trim();
             var apiKey = ApiKeyBox.Password.Trim();
+            var authMode = (AuthModeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "api_key";
+            var authHeader = AuthHeaderBox.Text.Trim();
+            var authScheme = AuthSchemeBox.Text.Trim();
+            var authTokenEnv = AuthTokenEnvBox.Text.Trim();
+            var authTokenCommand = AuthTokenCommandBox.Text.Trim();
 
             if (string.IsNullOrEmpty(model))
             {
@@ -149,7 +153,30 @@ public sealed partial class SettingsPage : Page
                 return;
             }
 
-            await HermesEnvironment.SaveModelConfigAsync(providerTag, baseUrl, model, apiKey);
+            if (authMode == "oauth_proxy_env" && string.IsNullOrWhiteSpace(authTokenEnv))
+            {
+                ModelSaveStatus.Text = "Token env var is required for OAuth Proxy (Env Token).";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
+            }
+
+            if (authMode == "oauth_proxy_command" && string.IsNullOrWhiteSpace(authTokenCommand))
+            {
+                ModelSaveStatus.Text = "Token command is required for OAuth Proxy (Command Token).";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
+            }
+
+            await HermesEnvironment.SaveModelConfigAsync(
+                providerTag,
+                baseUrl,
+                model,
+                apiKey,
+                authMode,
+                authHeader,
+                authScheme,
+                authTokenEnv,
+                authTokenCommand);
             ModelSaveStatus.Text = "Saved successfully. Restart to apply.";
             ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOnlineBrush"];
         }
@@ -178,5 +205,32 @@ public sealed partial class SettingsPage : Page
     private void OpenWorkspace_Click(object sender, RoutedEventArgs e)
     {
         HermesEnvironment.OpenWorkspace();
+    }
+
+    private static void SelectComboByTag(ComboBox combo, string? tag, int fallbackIndex)
+    {
+        for (int i = 0; i < combo.Items.Count; i++)
+        {
+            if (combo.Items[i] is ComboBoxItem item &&
+                string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+            {
+                combo.SelectedIndex = i;
+                return;
+            }
+        }
+
+        combo.SelectedIndex = fallbackIndex;
+    }
+
+    private void UpdateAuthFieldState(string? authMode)
+    {
+        var mode = (authMode ?? "api_key").ToLowerInvariant();
+        var usesProxyToken = mode is "oauth_proxy_env" or "oauth_proxy_command";
+
+        ApiKeyBox.IsEnabled = mode == "api_key";
+        AuthHeaderBox.IsEnabled = usesProxyToken;
+        AuthSchemeBox.IsEnabled = usesProxyToken;
+        AuthTokenEnvBox.IsEnabled = mode == "oauth_proxy_env";
+        AuthTokenCommandBox.IsEnabled = mode == "oauth_proxy_command";
     }
 }

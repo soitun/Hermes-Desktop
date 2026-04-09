@@ -173,17 +173,21 @@ Add-AppxPackage -Register AppxManifest.xml
 Create `%LOCALAPPDATA%\hermes\config.yaml`:
 
 ```yaml
-llm:
+model:
   provider: openai
-  model: minimax-m2.7:cloud
-  baseUrl: http://localhost:11434/v1
-  apiKey: ""
+  base_url: https://api.openai.com/v1
+  default: gpt-5.4
+  api_key: sk-your-key-here
 
-# Or use a cloud provider
-# llm:
-#   provider: anthropic
-#   model: claude-sonnet-4-20250514
-#   apiKey: sk-your-key-here
+# Or point Hermes at an OpenAI-compatible OAuth proxy
+# model:
+#   provider: openai
+#   base_url: https://your-proxy.example/v1
+#   default: gpt-5.4
+#   auth_mode: oauth_proxy_command
+#   auth_header: Authorization
+#   auth_scheme: Bearer
+#   auth_token_command: oauth-proxy-helper print-access-token
 
 messaging:
   telegram:

@@ -32,6 +32,11 @@ public sealed class LlmConfig
     public required string Model { get; init; }
     public string? BaseUrl { get; init; }
     public string? ApiKey { get; init; }
+    public string? AuthMode { get; init; }
+    public string? AuthHeader { get; init; }
+    public string? AuthScheme { get; init; }
+    public string? AuthTokenEnv { get; init; }
+    public string? AuthTokenCommand { get; init; }
     public double Temperature { get; init; } = 0.7;
     public int MaxTokens { get; init; } = 4096;
 }

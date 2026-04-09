@@ -50,7 +50,12 @@ internal static class HermesEnvironment
         Provider = ModelProvider,
         Model = DefaultModel,
         BaseUrl = ModelBaseUrl,
-        ApiKey = ModelApiKey ?? ""
+        ApiKey = ModelApiKey ?? "",
+        AuthMode = ModelAuthMode,
+        AuthHeader = ModelAuthHeader,
+        AuthScheme = ModelAuthScheme,
+        AuthTokenEnv = ModelAuthTokenEnv,
+        AuthTokenCommand = ModelAuthTokenCommand
     };
 
     /// <summary>
@@ -444,6 +449,16 @@ internal static class HermesEnvironment
 
     internal static string? ModelApiKey => ReadModelSetting("api_key");
 
+    internal static string ModelAuthMode => ReadModelSetting("auth_mode") ?? "api_key";
+
+    internal static string ModelAuthHeader => ReadModelSetting("auth_header") ?? "Authorization";
+
+    internal static string ModelAuthScheme => ReadModelSetting("auth_scheme") ?? "Bearer";
+
+    internal static string? ModelAuthTokenEnv => ReadModelSetting("auth_token_env");
+
+    internal static string? ModelAuthTokenCommand => ReadModelSetting("auth_token_command");
+
     internal static string AgentWorkingDirectory
     {
         get
@@ -553,7 +568,16 @@ internal static class HermesEnvironment
     }
 
     /// <summary>Write model configuration to config.yaml.</summary>
-    internal static async Task SaveModelConfigAsync(string provider, string baseUrl, string model, string apiKey)
+    internal static async Task SaveModelConfigAsync(
+        string provider,
+        string baseUrl,
+        string model,
+        string apiKey,
+        string authMode,
+        string authHeader,
+        string authScheme,
+        string authTokenEnv,
+        string authTokenCommand)
     {
         var configPath = HermesConfigPath;
         var dir = Path.GetDirectoryName(configPath);
@@ -565,10 +589,34 @@ internal static class HermesEnvironment
             ["provider"] = provider,
             ["base_url"] = baseUrl,
             ["default"] = model,
+            ["auth_mode"] = authMode,
         };
 
-        if (!string.IsNullOrWhiteSpace(apiKey))
+        if (!string.IsNullOrWhiteSpace(apiKey) &&
+            string.Equals(authMode, "api_key", StringComparison.OrdinalIgnoreCase))
             settings["api_key"] = apiKey;
+
+        if (string.Equals(authMode, "oauth_proxy_env", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(authMode, "oauth_proxy_command", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.IsNullOrWhiteSpace(authHeader))
+                settings["auth_header"] = authHeader;
+
+            if (authScheme is not null)
+                settings["auth_scheme"] = authScheme;
+        }
+
+        if (string.Equals(authMode, "oauth_proxy_env", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(authTokenEnv))
+        {
+            settings["auth_token_env"] = authTokenEnv;
+        }
+
+        if (string.Equals(authMode, "oauth_proxy_command", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(authTokenCommand))
+        {
+            settings["auth_token_command"] = authTokenCommand;
+        }
 
         await WriteYamlSectionAsync(configPath, "model", settings);
     }
