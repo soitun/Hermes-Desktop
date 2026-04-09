@@ -118,6 +118,20 @@ public partial class App : Application
             buddyDir,
             sp.GetRequiredService<IChatClient>()));
 
+        // Wiki system (persistent knowledge base)
+        var wikiConfig = new Hermes.Agent.Wiki.WikiConfig();
+        services.AddSingleton(wikiConfig);
+        services.AddSingleton<Hermes.Agent.Wiki.IWikiStorage>(sp =>
+            new Hermes.Agent.Wiki.LocalWikiStorage(sp.GetRequiredService<Hermes.Agent.Wiki.WikiConfig>()));
+        services.AddSingleton(sp => new Hermes.Agent.Wiki.WikiSearchIndex(
+            Path.Combine(sp.GetRequiredService<Hermes.Agent.Wiki.WikiConfig>().WikiPath, ".wiki-search.db"),
+            sp.GetRequiredService<ILogger<Hermes.Agent.Wiki.WikiSearchIndex>>()));
+        services.AddSingleton(sp => new Hermes.Agent.Wiki.WikiManager(
+            sp.GetRequiredService<Hermes.Agent.Wiki.IWikiStorage>(),
+            sp.GetRequiredService<Hermes.Agent.Wiki.WikiConfig>(),
+            sp.GetRequiredService<Hermes.Agent.Wiki.WikiSearchIndex>(),
+            sp.GetRequiredService<ILogger<Hermes.Agent.Wiki.WikiManager>>()));
+
         // Soul service (persistent identity, user profile, mistakes, habits)
         services.AddSingleton(sp => new SoulService(
             hermesHome,
