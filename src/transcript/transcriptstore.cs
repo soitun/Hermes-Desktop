@@ -34,25 +34,28 @@ public sealed class TranscriptStore
     public async Task SaveMessageAsync(string sessionId, Message message, CancellationToken ct)
     {
         var transcriptPath = GetTranscriptPath(sessionId);
-        
+
         // Ensure directory exists
         Directory.CreateDirectory(Path.GetDirectoryName(transcriptPath)!);
-        
+
         // Serialize to JSONL
         var json = JsonSerializer.Serialize(message, JsonOptions);
-        
-        // CRITICAL: Write to disk FIRST (before updating cache)
+        var bytes = System.Text.Encoding.UTF8.GetBytes(json + "\n");
+
+        // INV-008: Atomic transcript writes using FileStream with WriteThrough
+        // Ensures data hits disk immediately, preventing data loss on crash.
         await _writeLock.WaitAsync(ct);
         try
         {
-            await File.AppendAllTextAsync(transcriptPath, json + "\n", ct);
-            
-            // Optional eager flush (adds ~4ms latency, more durable)
-            if (_eagerFlush)
-            {
-                using var fs = File.Open(transcriptPath, FileMode.Append, FileAccess.Write, FileShare.Read);
-                await fs.FlushAsync(ct);
-            }
+            using var fs = new FileStream(
+                transcriptPath,
+                FileMode.Append,
+                FileAccess.Write,
+                FileShare.Read,
+                bufferSize: 4096,
+                FileOptions.WriteThrough | FileOptions.SequentialScan);
+            await fs.WriteAsync(bytes, ct);
+            await fs.FlushAsync(ct);
         }
         finally
         {
@@ -169,11 +172,21 @@ public sealed class TranscriptStore
         Directory.CreateDirectory(Path.GetDirectoryName(activityPath)!);
 
         var json = JsonSerializer.Serialize(entry, ActivityJsonOptions);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(json + "\n");
 
+        // INV-008: Atomic writes with WriteThrough for activity log too
         await _writeLock.WaitAsync(ct);
         try
         {
-            await File.AppendAllTextAsync(activityPath, json + "\n", ct);
+            using var fs = new FileStream(
+                activityPath,
+                FileMode.Append,
+                FileAccess.Write,
+                FileShare.Read,
+                bufferSize: 4096,
+                FileOptions.WriteThrough | FileOptions.SequentialScan);
+            await fs.WriteAsync(bytes, ct);
+            await fs.FlushAsync(ct);
         }
         finally
         {

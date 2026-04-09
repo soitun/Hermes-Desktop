@@ -263,10 +263,19 @@ public sealed class OpenAiClient : IChatClient
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
                 var response = await _httpClient.SendAsync(request, ct);
+
+                // INV-004/005: Mark credential failed on auth or rate-limit errors and rotate
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
                     response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    _credentialPool.MarkFailed(apiKey);
+                    _credentialPool.MarkFailed(apiKey, (int)response.StatusCode, "auth_error");
+                    response.Dispose();
+                    continue; // Retry with next key
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    _credentialPool.MarkFailed(apiKey, 429, "rate_limited");
                     response.Dispose();
                     continue; // Retry with next key
                 }

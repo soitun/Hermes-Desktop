@@ -9,6 +9,7 @@ using Hermes.Agent.Transcript;
 using Hermes.Agent.Memory;
 using Hermes.Agent.Context;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -25,6 +26,15 @@ public sealed class Agent : IAgent
     private readonly ContextManager? _contextManager;
     private readonly SoulService? _soulService;
     private readonly PluginManager? _pluginManager;
+
+    // INV-004/005: Provider fallback state machine
+    private readonly IChatClient? _fallbackChatClient;
+    private readonly CredentialPool? _credentialPool;
+    private bool _usingFallback;
+    private DateTime? _fallbackActivatedAt;
+
+    /// <summary>How often to attempt restoring the primary provider when on fallback.</summary>
+    private static readonly TimeSpan PrimaryRestorationInterval = TimeSpan.FromMinutes(5);
 
     /// <summary>Safety limit to prevent infinite tool loops.</summary>
     public int MaxToolIterations { get; set; } = 25;
@@ -69,7 +79,9 @@ public sealed class Agent : IAgent
         MemoryManager? memories = null,
         ContextManager? contextManager = null,
         SoulService? soulService = null,
-        PluginManager? pluginManager = null)
+        PluginManager? pluginManager = null,
+        IChatClient? fallbackChatClient = null,
+        CredentialPool? credentialPool = null)
     {
         _chatClient = chatClient;
         _logger = logger;
@@ -79,6 +91,49 @@ public sealed class Agent : IAgent
         _contextManager = contextManager;
         _soulService = soulService;
         _pluginManager = pluginManager;
+        _fallbackChatClient = fallbackChatClient;
+        _credentialPool = credentialPool;
+    }
+
+    /// <summary>
+    /// INV-004/005: Gets the active chat client, handling fallback and primary restoration.
+    /// At the start of each turn, if on fallback and enough time has passed, try primary.
+    /// </summary>
+    private IChatClient GetActiveChatClient()
+    {
+        if (_usingFallback && _fallbackActivatedAt.HasValue)
+        {
+            var elapsed = DateTime.UtcNow - _fallbackActivatedAt.Value;
+            if (elapsed >= PrimaryRestorationInterval)
+            {
+                // Check if credential pool has recovered
+                if (_credentialPool is null || _credentialPool.HasHealthyCredentials)
+                {
+                    _logger.LogInformation("Attempting to restore primary provider after {Elapsed}s on fallback",
+                        elapsed.TotalSeconds);
+                    _usingFallback = false;
+                    _fallbackActivatedAt = null;
+                    return _chatClient;
+                }
+            }
+            return _fallbackChatClient ?? _chatClient;
+        }
+        return _chatClient;
+    }
+
+    /// <summary>
+    /// INV-004/005: Activates fallback provider after a primary provider failure.
+    /// </summary>
+    private IChatClient ActivateFallback(Exception ex)
+    {
+        if (_fallbackChatClient is not null && !_usingFallback)
+        {
+            _usingFallback = true;
+            _fallbackActivatedAt = DateTime.UtcNow;
+            _logger.LogWarning(ex, "Primary provider failed — activating fallback provider");
+            return _fallbackChatClient;
+        }
+        throw ex; // No fallback available, rethrow
     }
 
     public void RegisterTool(ITool tool)
@@ -210,7 +265,18 @@ public sealed class Agent : IAgent
         {
             // No tools registered — simple completion
             var messagesToSend = preparedContext ?? session.Messages;
-            var response = await _chatClient.CompleteAsync(messagesToSend, ct);
+            // INV-004/005: Use active client (with fallback support)
+            var activeClient = GetActiveChatClient();
+            string response;
+            try
+            {
+                response = await activeClient.CompleteAsync(messagesToSend, ct);
+            }
+            catch (HttpRequestException ex) when (_fallbackChatClient is not null)
+            {
+                activeClient = ActivateFallback(ex);
+                response = await activeClient.CompleteAsync(messagesToSend, ct);
+            }
             var assistantMsg = new Message { Role = "assistant", Content = response };
             session.AddMessage(assistantMsg);
             if (_transcripts is not null)
@@ -241,7 +307,18 @@ public sealed class Agent : IAgent
                 ? preparedContext
                 : session.Messages;
 
-            var response = await _chatClient.CompleteWithToolsAsync(messagesToUse, toolDefs, ct);
+            // INV-004/005: Use active client with fallback support
+            var activeClientForTools = GetActiveChatClient();
+            ChatResponse response;
+            try
+            {
+                response = await activeClientForTools.CompleteWithToolsAsync(messagesToUse, toolDefs, ct);
+            }
+            catch (HttpRequestException ex) when (_fallbackChatClient is not null)
+            {
+                activeClientForTools = ActivateFallback(ex);
+                response = await activeClientForTools.CompleteWithToolsAsync(messagesToUse, toolDefs, ct);
+            }
 
             if (!response.HasToolCalls)
             {
@@ -256,19 +333,22 @@ public sealed class Agent : IAgent
                 return finalContent;
             }
 
+            // Normalize tool-call IDs for deterministic referencing across providers
+            var normalizedToolCalls = NormalizeToolCallIds(response.ToolCalls!, iterations);
+
             // Record the assistant message with its tool call requests
             var assistantToolMsg = new Message
             {
                 Role = "assistant",
                 Content = response.Content ?? "",
-                ToolCalls = response.ToolCalls
+                ToolCalls = normalizedToolCalls
             };
             session.AddMessage(assistantToolMsg);
             if (_transcripts is not null)
                 await _transcripts.SaveMessageAsync(session.Id, assistantToolMsg, ct);
 
             // Execute tool calls — parallel when safe, sequential otherwise
-            var toolCallsList = response.ToolCalls!;
+            var toolCallsList = normalizedToolCalls;
 
             if (ShouldParallelize(toolCallsList))
             {
@@ -616,19 +696,22 @@ public sealed class Agent : IAgent
                 yield break;
             }
 
+            // Normalize tool-call IDs for deterministic referencing across providers
+            var normalizedStreamToolCalls = NormalizeToolCallIds(response.ToolCalls!, iterations);
+
             // Record assistant message with tool call requests
             var assistantToolMsg = new Message
             {
                 Role = "assistant",
                 Content = response.Content ?? "",
-                ToolCalls = response.ToolCalls
+                ToolCalls = normalizedStreamToolCalls
             };
             session.AddMessage(assistantToolMsg);
             if (_transcripts is not null)
                 await _transcripts.SaveMessageAsync(session.Id, assistantToolMsg, ct);
 
             // Execute each tool call
-            foreach (var toolCall in response.ToolCalls!)
+            foreach (var toolCall in normalizedStreamToolCalls)
             {
                 // ── Permission gate ──
                 if (_permissions is not null)
@@ -914,4 +997,43 @@ public sealed class Agent : IAgent
         string.IsNullOrEmpty(value) ? "" :
         value.Length <= maxLength ? value :
         value[..maxLength] + "...";
+
+    /// <summary>
+    /// Deterministic tool-call ID normalization. Ensures stable IDs when provider-generated
+    /// IDs are missing or empty, preventing prompt-cache invalidation across providers.
+    /// </summary>
+    private static string NormalizeToolCallId(string id, int turnNumber, int callIndex)
+    {
+        if (!string.IsNullOrEmpty(id)) return id;
+        // Generate deterministic ID as fallback
+        return $"call_{turnNumber}_{callIndex}";
+    }
+
+    /// <summary>
+    /// Normalizes all tool-call IDs in a response, ensuring deterministic fallbacks
+    /// for any missing IDs before they are stored in the session.
+    /// </summary>
+    private static List<ToolCall> NormalizeToolCallIds(IReadOnlyList<ToolCall> toolCalls, int turnNumber)
+    {
+        var result = new List<ToolCall>(toolCalls.Count);
+        for (int i = 0; i < toolCalls.Count; i++)
+        {
+            var tc = toolCalls[i];
+            var normalizedId = NormalizeToolCallId(tc.Id, turnNumber, i);
+            if (normalizedId == tc.Id)
+            {
+                result.Add(tc);
+            }
+            else
+            {
+                result.Add(new ToolCall
+                {
+                    Id = normalizedId,
+                    Name = tc.Name,
+                    Arguments = tc.Arguments
+                });
+            }
+        }
+        return result;
+    }
 }

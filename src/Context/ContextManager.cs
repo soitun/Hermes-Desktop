@@ -265,6 +265,11 @@ public sealed class ContextManager
     /// Uses the LLM to compress evicted messages into a summary paragraph.
     /// This summary becomes part of SessionState and survives across turns.
     /// </summary>
+    /// <summary>
+    /// Uses the LLM to compress evicted messages into a summary paragraph.
+    /// INV-002: When a previous summary exists, instructs the LLM to UPDATE it
+    /// rather than regenerate from scratch, using a structured template.
+    /// </summary>
     private async Task SummarizeEvictedAsync(
         SessionState state,
         List<Message> evictedMessages,
@@ -277,22 +282,37 @@ public sealed class ContextManager
         if (transcript.Length > 4000)
             transcript = "[...truncated]\n" + transcript[^4000..];
 
-        var existingSummary = string.IsNullOrEmpty(state.Summary.Content)
-            ? ""
-            : $"Previous summary: {state.Summary.Content}\n\n";
+        var hasPreviousSummary = !string.IsNullOrEmpty(state.Summary.Content);
+
+        // INV-002: Iterative summary — update existing summary instead of regenerating
+        var systemContent = hasPreviousSummary
+            ? "You are a conversation summarizer. You have an existing summary to UPDATE. "
+              + "Merge the new information into the existing summary. Do not start over. "
+              + "Use the structured template provided. Preserve important names, paths, and technical details."
+            : "You are a conversation summarizer. Produce a concise structured summary. "
+              + "Preserve important names, paths, and technical details. Do not include pleasantries or filler.";
+
+        var userContent = hasPreviousSummary
+            ? $"Previous summary to UPDATE:\n{state.Summary.Content}\n\n"
+              + $"New conversation segment to incorporate:\n\n{transcript}\n\n"
+              + "Produce the updated summary using this template:\n"
+              + "- Goal: [update from previous]\n"
+              + "- Progress: [what was accomplished]\n"
+              + "- Decisions: [key choices made]\n"
+              + "- Files: [files touched]\n"
+              + "- Next: [what's needed next]"
+            : $"Summarize this conversation segment:\n\n{transcript}\n\n"
+              + "Use this template:\n"
+              + "- Goal: [the current objective]\n"
+              + "- Progress: [what was accomplished]\n"
+              + "- Decisions: [key choices made]\n"
+              + "- Files: [files touched]\n"
+              + "- Next: [what's needed next]";
 
         var summarizePrompt = new List<Message>
         {
-            new()
-            {
-                Role = "system",
-                Content = "You are a conversation summarizer. Produce a concise summary (2-4 sentences) of the key points, decisions, and outcomes. Preserve important names, paths, and technical details. Do not include pleasantries or filler."
-            },
-            new()
-            {
-                Role = "user",
-                Content = $"{existingSummary}Summarize this conversation segment:\n\n{transcript}"
-            }
+            new() { Role = "system", Content = systemContent },
+            new() { Role = "user", Content = userContent }
         };
 
         try
@@ -302,9 +322,10 @@ public sealed class ContextManager
             state.Summary.CoveredThroughTurn = state.TurnCount;
 
             _logger.LogInformation(
-                "Summarized {Count} evicted messages into {Tokens} est. tokens",
+                "Summarized {Count} evicted messages into {Tokens} est. tokens (iterative={Iterative})",
                 evictedMessages.Count,
-                _budget.EstimateTokens(summary));
+                _budget.EstimateTokens(summary),
+                hasPreviousSummary);
         }
         catch (OperationCanceledException)
         {
