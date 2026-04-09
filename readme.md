@@ -244,7 +244,7 @@ Hermes.CS/
 │   ├── souls/                   # 12 soul templates
 │   └── ...                      # 29 total categories
 ├── docs/                        # Architecture documentation
-└── Hermes.CS.sln
+└── HermesDesktop.slnx
 ```
 
 ## Tech Stack
