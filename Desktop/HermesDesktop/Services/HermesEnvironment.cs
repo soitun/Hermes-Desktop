@@ -454,9 +454,11 @@ internal static class HermesEnvironment
 
     internal static string ModelProvider => ReadModelSetting("provider") ?? "custom";
 
-    internal static string ModelBaseUrl => ReadModelSetting("base_url") ?? "http://127.0.0.1:11434/v1";
+    internal static string ModelBaseUrl =>
+        ReadModelSetting("base_url") ?? Hermes.Agent.LLM.ModelCatalog.GetDefaultBaseUrl(ModelProvider);
 
-    internal static string DefaultModel => ReadModelSetting("default") ?? "minimax-m2.7:cloud";
+    internal static string DefaultModel =>
+        ReadModelSetting("default") ?? Hermes.Agent.LLM.ModelCatalog.GetDefaultModelId(ModelProvider);
 
     internal static string DisplayModelProvider =>
         PrivacyModeEnabled ? "configured" : ModelProvider;

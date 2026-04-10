@@ -147,7 +147,7 @@ public sealed partial class ChatPage : Page
         ModelSwitchCombo.Items.Clear();
 
         // Always show the user's currently-configured model first
-        var currentProvider = HermesEnvironment.ModelProvider;
+        var currentProvider = ModelCatalog.NormalizeProvider(HermesEnvironment.ModelProvider);
         var currentModel = HermesEnvironment.DefaultModel;
         var currentBaseUrl = HermesEnvironment.ModelBaseUrl;
         var currentApiKey = HermesEnvironment.ModelApiKey ?? "";
@@ -159,21 +159,39 @@ public sealed partial class ChatPage : Page
             (currentLabel, currentProvider, currentModel, currentBaseUrl, currentApiKey)
         };
 
+        void AddPreset(string label, string provider, string model, string baseUrl, string apiKey)
+        {
+            if (currentProvider.Equals(provider, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            items.Add((label, provider, model, baseUrl, apiKey));
+        }
+
         // Only add additional presets if API keys are actually configured for them
         var anthropicKey = HermesEnvironment.ReadConfigSetting("provider_keys", "anthropic") ?? "";
         var openaiKey = HermesEnvironment.ReadConfigSetting("provider_keys", "openai") ?? "";
         var qwenKey = HermesEnvironment.ReadConfigSetting("provider_keys", "qwen") ?? "";
         var ollamaUrl = HermesEnvironment.ReadConfigSetting("provider_keys", "ollama_url") ?? "";
+        var lmStudioUrl = HermesEnvironment.ReadConfigSetting("provider_keys", "lmstudio_url") ?? "";
+        var lmStudioModel = HermesEnvironment.ReadConfigSetting("provider_keys", "lmstudio_model") ?? "";
 
-        // Don't duplicate the current model
-        if (!string.IsNullOrEmpty(anthropicKey) && !currentProvider.Equals("anthropic", StringComparison.OrdinalIgnoreCase))
-            items.Add(("Claude Sonnet 4.6", "anthropic", "claude-sonnet-4-6", "https://api.anthropic.com", anthropicKey));
-        if (!string.IsNullOrEmpty(openaiKey) && !currentProvider.Equals("openai", StringComparison.OrdinalIgnoreCase))
-            items.Add(("GPT-5.4", "openai", "gpt-5.4", "https://api.openai.com/v1", openaiKey));
-        if (!string.IsNullOrEmpty(ollamaUrl) && !currentProvider.Equals("ollama", StringComparison.OrdinalIgnoreCase))
-            items.Add(("Ollama (Local)", "ollama", "glm-4.7-flash:latest", ollamaUrl, ""));
-        if (!string.IsNullOrEmpty(qwenKey) && !currentProvider.Equals("qwen", StringComparison.OrdinalIgnoreCase))
-            items.Add(("Qwen", "qwen", "qwen-plus", "https://dashscope.aliyuncs.com/compatible-mode/v1", qwenKey));
+        if (!string.IsNullOrEmpty(anthropicKey))
+            AddPreset("Claude Sonnet 4.6", "anthropic", "claude-sonnet-4-6", ModelCatalog.GetDefaultBaseUrl("anthropic"), anthropicKey);
+        if (!string.IsNullOrEmpty(openaiKey))
+            AddPreset("GPT-5.4", "openai", "gpt-5.4", ModelCatalog.GetDefaultBaseUrl("openai"), openaiKey);
+        if (!string.IsNullOrEmpty(ollamaUrl))
+            AddPreset("Ollama (Local)", "ollama", "glm-4.7-flash:latest", ollamaUrl, "");
+        if (!string.IsNullOrEmpty(qwenKey))
+            AddPreset("Qwen", "qwen", "qwen-plus", ModelCatalog.GetDefaultBaseUrl("qwen"), qwenKey);
+        if (!string.IsNullOrWhiteSpace(lmStudioModel))
+        {
+            AddPreset(
+                ResourceLoader.GetString("ChatModelSwitchLmStudioLocal"),
+                "lmstudio",
+                lmStudioModel,
+                string.IsNullOrWhiteSpace(lmStudioUrl) ? ModelCatalog.GetDefaultBaseUrl("lmstudio") : lmStudioUrl,
+                "");
+        }
 
         for (int i = 0; i < items.Count; i++)
         {

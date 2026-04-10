@@ -126,6 +126,8 @@ public static class ModelCatalog
                 new("llama4:latest",            "Llama 4 (Local)",          128_000),
             },
 
+            ["lmstudio"] = Array.Empty<ModelEntry>(),
+
             ["local"] = new ModelEntry[]
             {
                 new("custom",  "Custom / Local Model", 128_000),
@@ -135,7 +137,7 @@ public static class ModelCatalog
     /// <summary>All known provider names.</summary>
     public static IReadOnlyList<string> Providers { get; } = new[]
     {
-        "nous", "openai", "anthropic", "qwen", "deepseek", "minimax", "openrouter", "ollama", "local"
+        "nous", "openai", "anthropic", "qwen", "deepseek", "minimax", "openrouter", "ollama", "lmstudio", "local"
     };
 
     /// <summary>Default base URLs for known providers.</summary>
@@ -150,15 +152,46 @@ public static class ModelCatalog
             ["openrouter"] = "https://openrouter.ai/api/v1",
             ["nous"]       = "https://openrouter.ai/api/v1",
             ["ollama"]     = "http://127.0.0.1:11434/v1",
+            ["lmstudio"]   = "http://localhost:1234/v1",
             ["local"]      = "http://127.0.0.1:11434/v1",
         };
 
     /// <summary>Get models for a provider, returning an empty list if unknown.</summary>
-    public static IReadOnlyList<ModelEntry> GetModels(string provider)
+    public static IReadOnlyList<ModelEntry> GetModels(string? provider)
     {
-        return ProviderModels.TryGetValue(provider.ToLowerInvariant(), out var models)
+        var normalizedProvider = NormalizeProvider(provider);
+
+        return ProviderModels.TryGetValue(normalizedProvider, out var models)
             ? models
             : Array.Empty<ModelEntry>();
+    }
+
+    /// <summary>Normalize provider aliases to the supported provider keys.</summary>
+    public static string NormalizeProvider(string? provider)
+    {
+        if (string.IsNullOrWhiteSpace(provider))
+            return "local";
+
+        return provider.Equals("custom", StringComparison.OrdinalIgnoreCase)
+            ? "local"
+            : provider.ToLowerInvariant();
+    }
+
+    /// <summary>Get the default base URL for a provider.</summary>
+    public static string GetDefaultBaseUrl(string? provider)
+    {
+        var normalizedProvider = NormalizeProvider(provider);
+
+        return ProviderBaseUrls.TryGetValue(normalizedProvider, out var url)
+            ? url
+            : ProviderBaseUrls["local"];
+    }
+
+    /// <summary>Get the default model ID for a provider.</summary>
+    public static string GetDefaultModelId(string? provider)
+    {
+        var models = GetModels(provider);
+        return models.Count > 0 ? models[0].Id : "custom";
     }
 
     /// <summary>Look up context length for a model ID. Returns default 128k if unknown.</summary>

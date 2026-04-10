@@ -45,10 +45,11 @@ Switch between providers mid-conversation with one click. No app restart needed.
 - **Claude Sonnet 4.6** (Anthropic) — with full tool calling
 - **GPT-5.4 / GPT-5.4 Mini** (OpenAI)
 - **Ollama** (local models — GLM-4.7 Flash, Gemma 4, Llama 4, etc.)
+- **LM Studio** (local OpenAI-compatible server)
 - **Qwen** (Alibaba)
 - **DeepSeek, MiniMax, OpenRouter, Nous** — via settings
 
-Pattern from Claude Code: `ChatClientFactory` creates fresh client per swap, `SwappableChatClient` proxy routes all existing consumers transparently. API keys stored in `config.yaml` `provider_keys` section.
+Pattern from Claude Code: `ChatClientFactory` creates fresh client per swap, `SwappableChatClient` proxy routes all existing consumers transparently. API keys and local provider overrides live in the `config.yaml` `provider_keys` section.
 
 ### 27+ Built-in Tools
 
@@ -194,6 +195,14 @@ provider_keys:
   openai: sk-proj-your-key
   qwen: sk-your-qwen-key
   ollama_url: http://127.0.0.1:11434/v1
+  lmstudio_url: http://localhost:1234/v1
+  lmstudio_model: qwen2.5-coder-7b-instruct
+
+# LM Studio local server example
+# model:
+#   provider: lmstudio
+#   default: qwen2.5-coder-7b-instruct
+#   base_url: http://localhost:1234/v1
 ```
 
 ## Project Structure

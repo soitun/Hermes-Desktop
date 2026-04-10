@@ -35,6 +35,7 @@ public sealed partial class SettingsPage : Page
         : ResourceLoader.GetString("StatusNotDetected");
 
     private bool _suppressModelComboEvent;
+    private string _selectedProviderTag = "local";
 
     // ═══════════════════════════════════════════
     //  Page Loaded — populate all sections
@@ -174,7 +175,7 @@ This file is a living document about the human I work with. It helps me provide 
     // ── Model ──
     private void LoadModelSettings()
     {
-        var provider = HermesEnvironment.ModelProvider.ToLowerInvariant();
+        var provider = ModelCatalog.NormalizeProvider(HermesEnvironment.ModelProvider);
         var matchIndex = ProviderCombo.Items.Count - 1; // default to last (local)
         for (int i = 0; i < ProviderCombo.Items.Count; i++)
         {
@@ -185,9 +186,8 @@ This file is a living document about the human I work with. It helps me provide 
                 break;
             }
         }
-        if (provider == "custom")
-            matchIndex = ProviderCombo.Items.Count - 1;
 
+        _selectedProviderTag = provider;
         ProviderCombo.SelectedIndex = matchIndex;
         BaseUrlBox.Text = HermesEnvironment.ModelBaseUrl;
         ModelBox.Text = HermesEnvironment.DefaultModel;
@@ -195,6 +195,7 @@ This file is a living document about the human I work with. It helps me provide 
 
         PopulateModelCombo(provider);
         SelectCurrentModel(HermesEnvironment.DefaultModel);
+        UpdateModelInputHints(provider);
 
         // Temperature
         var tempStr = HermesEnvironment.ReadConfigSetting("model", "temperature");
@@ -320,13 +321,18 @@ This file is a living document about the human I work with. It helps me provide 
     // ═══════════════════════════════════════════
     private void ProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        var providerTag = (ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "local";
-        PopulateModelCombo(providerTag);
+        var providerTag = ModelCatalog.NormalizeProvider((ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString());
+        var shouldResetModelInput = ShouldResetModelInput(providerTag, _selectedProviderTag, ModelBox.Text.Trim());
 
-        if (ModelCatalog.ProviderBaseUrls.TryGetValue(providerTag, out var defaultUrl))
-        {
-            BaseUrlBox.Text = defaultUrl;
-        }
+        PopulateModelCombo(providerTag);
+        UpdateModelInputHints(providerTag);
+
+        BaseUrlBox.Text = ModelCatalog.GetDefaultBaseUrl(providerTag);
+
+        if (shouldResetModelInput)
+            ModelBox.Text = GetSuggestedModelText(providerTag);
+
+        _selectedProviderTag = providerTag;
     }
 
     private void PopulateModelCombo(string provider)
@@ -353,6 +359,45 @@ This file is a living document about the human I work with. It helps me provide 
             ContextLengthLabel.Text = $"Context: {ModelCatalog.FormatContextLength(models[0].ContextLength)}";
         else
             ContextLengthLabel.Text = "Context: --";
+    }
+
+    private void UpdateModelInputHints(string provider)
+    {
+        BaseUrlBox.PlaceholderText = ModelCatalog.GetDefaultBaseUrl(provider);
+
+        if (string.Equals(provider, "lmstudio", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelBox.PlaceholderText = ResourceLoader.GetString("SettingsModelLmStudioPlaceholder");
+            if (ModelCatalog.GetModels(provider).Count == 0)
+                ContextLengthLabel.Text = ResourceLoader.GetString("SettingsModelLmStudioContext");
+            return;
+        }
+
+        ModelBox.PlaceholderText = ResourceLoader.GetString("SettingsModelCustomIdPlaceholder");
+    }
+
+    private static string GetSuggestedModelText(string provider)
+    {
+        return ModelCatalog.GetModels(provider).Count > 0
+            ? ModelCatalog.GetDefaultModelId(provider)
+            : string.Empty;
+    }
+
+    private static bool ShouldResetModelInput(string newProvider, string previousProvider, string currentModel)
+    {
+        if (string.IsNullOrWhiteSpace(currentModel))
+            return true;
+
+        if (string.Equals(
+                ModelCatalog.NormalizeProvider(newProvider),
+                ModelCatalog.NormalizeProvider(previousProvider),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return ModelCatalog.GetModels(previousProvider)
+            .Any(model => string.Equals(model.Id, currentModel, StringComparison.OrdinalIgnoreCase));
     }
 
     private void SelectCurrentModel(string modelId)
@@ -405,10 +450,18 @@ This file is a living document about the human I work with. It helps me provide 
     {
         try
         {
-            var providerTag = (ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "custom";
-            var baseUrl = BaseUrlBox.Text.Trim();
+            var providerTag = ModelCatalog.NormalizeProvider((ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString());
+            var baseUrl = string.IsNullOrWhiteSpace(BaseUrlBox.Text)
+                ? ModelCatalog.GetDefaultBaseUrl(providerTag)
+                : BaseUrlBox.Text.Trim();
             var model = ModelBox.Text.Trim();
             var apiKey = ApiKeyBox.Password.Trim();
+
+            if (string.IsNullOrEmpty(model))
+            {
+                model = GetSuggestedModelText(providerTag);
+                ModelBox.Text = model;
+            }
 
             if (string.IsNullOrEmpty(model))
             {
@@ -428,8 +481,13 @@ This file is a living document about the human I work with. It helps me provide 
             };
             // Preserve existing api_key if user didn't type a new one
             if (!string.IsNullOrWhiteSpace(apiKey))
+            {
                 extras["api_key"] = apiKey;
-            else
+            }
+            else if (string.Equals(
+                         ModelCatalog.NormalizeProvider(HermesEnvironment.ModelProvider),
+                         providerTag,
+                         StringComparison.OrdinalIgnoreCase))
             {
                 var existingKey = HermesEnvironment.ModelApiKey;
                 if (!string.IsNullOrWhiteSpace(existingKey))
@@ -437,6 +495,7 @@ This file is a living document about the human I work with. It helps me provide 
             }
 
             await HermesEnvironment.SaveConfigSectionAsync("model", extras);
+            _selectedProviderTag = providerTag;
 
             ModelSaveStatus.Text = "Saved successfully. Restart to apply.";
             ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOnlineBrush"];

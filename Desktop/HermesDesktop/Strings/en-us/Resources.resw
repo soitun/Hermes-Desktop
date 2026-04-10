@@ -471,4 +471,19 @@
   <data name="ChatClearButton.AutomationProperties.Name" xml:space="preserve">
     <value>Clear the desktop chat conversation</value>
   </data>
+  <data name="SettingsModelProviderLmStudio.Content" xml:space="preserve">
+    <value>LM Studio</value>
+  </data>
+  <data name="SettingsModelCustomIdPlaceholder" xml:space="preserve">
+    <value>Or type a custom model ID</value>
+  </data>
+  <data name="SettingsModelLmStudioPlaceholder" xml:space="preserve">
+    <value>Enter the loaded LM Studio model ID</value>
+  </data>
+  <data name="SettingsModelLmStudioContext" xml:space="preserve">
+    <value>Context: depends on the model loaded in LM Studio</value>
+  </data>
+  <data name="ChatModelSwitchLmStudioLocal" xml:space="preserve">
+    <value>LM Studio (Local)</value>
+  </data>
 </root>
