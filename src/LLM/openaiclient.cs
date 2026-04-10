@@ -246,6 +246,20 @@ public sealed class OpenAiClient : IChatClient
                     AddHeader(request, "Authorization", "Bearer", _config.ApiKey.Trim());
                 return;
 
+            case "api_key_env":
+            {
+                var envName = _config.ApiKeyEnv?.Trim();
+                if (string.IsNullOrWhiteSpace(envName))
+                    throw new InvalidOperationException("model.api_key_env is required for auth_mode=api_key_env.");
+
+                var apiKey = Environment.GetEnvironmentVariable(envName);
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    throw new InvalidOperationException($"Environment variable '{envName}' is not set for API key auth.");
+
+                AddHeader(request, "Authorization", "Bearer", apiKey.Trim());
+                return;
+            }
+
             case "none":
                 return;
 

@@ -54,6 +54,7 @@ internal static class HermesEnvironment
         AuthMode = ModelAuthMode,
         AuthHeader = ModelAuthHeader,
         AuthScheme = ModelAuthScheme,
+        ApiKeyEnv = ModelApiKeyEnv,
         AuthTokenEnv = ModelAuthTokenEnv,
         AuthTokenCommand = ModelAuthTokenCommand
     };
@@ -449,6 +450,8 @@ internal static class HermesEnvironment
 
     internal static string? ModelApiKey => ReadModelSetting("api_key");
 
+    internal static string? ModelApiKeyEnv => ReadModelSetting("api_key_env");
+
     internal static string ModelAuthMode => ReadModelSetting("auth_mode") ?? "api_key";
 
     internal static string ModelAuthHeader => ReadModelSetting("auth_header") ?? "Authorization";
@@ -573,6 +576,7 @@ internal static class HermesEnvironment
         string baseUrl,
         string model,
         string apiKey,
+        string apiKeyEnv,
         string authMode,
         string authHeader,
         string authScheme,
@@ -595,6 +599,10 @@ internal static class HermesEnvironment
         if (!string.IsNullOrWhiteSpace(apiKey) &&
             string.Equals(authMode, "api_key", StringComparison.OrdinalIgnoreCase))
             settings["api_key"] = apiKey;
+
+        if (string.Equals(authMode, "api_key_env", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(apiKeyEnv))
+            settings["api_key_env"] = apiKeyEnv;
 
         if (string.Equals(authMode, "oauth_proxy_env", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(authMode, "oauth_proxy_command", StringComparison.OrdinalIgnoreCase))

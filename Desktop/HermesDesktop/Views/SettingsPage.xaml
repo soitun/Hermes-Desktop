@@ -49,6 +49,7 @@
                                           SelectionChanged="ProviderCombo_SelectionChanged">
                                     <ComboBoxItem Content="Nous (OpenRouter)" Tag="nous"/>
                                     <ComboBoxItem Content="OpenAI" Tag="openai"/>
+                                    <ComboBoxItem Content="Google Gemini" Tag="google"/>
                                     <ComboBoxItem Content="Anthropic" Tag="anthropic"/>
                                     <ComboBoxItem Content="Qwen (Alibaba)" Tag="qwen"/>
                                     <ComboBoxItem Content="DeepSeek" Tag="deepseek"/>
@@ -99,10 +100,19 @@
                                           BorderBrush="{StaticResource AppStrokeBrush}"
                                           SelectionChanged="AuthModeCombo_SelectionChanged">
                                     <ComboBoxItem Content="API Key" Tag="api_key"/>
+                                    <ComboBoxItem Content="API Key (Env Var)" Tag="api_key_env"/>
                                     <ComboBoxItem Content="OAuth Proxy (Env Token)" Tag="oauth_proxy_env"/>
                                     <ComboBoxItem Content="OAuth Proxy (Command Token)" Tag="oauth_proxy_command"/>
                                     <ComboBoxItem Content="No Auth Header" Tag="none"/>
                                 </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="API KEY ENV VAR" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox x:Name="ApiKeyEnvBox" PlaceholderText="GOOGLE_API_KEY"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
                             </StackPanel>
 
                             <Grid ColumnSpacing="12">

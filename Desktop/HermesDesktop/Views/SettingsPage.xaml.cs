@@ -46,6 +46,7 @@ public sealed partial class SettingsPage : Page
         BaseUrlBox.Text = HermesEnvironment.ModelBaseUrl;
         ModelBox.Text = HermesEnvironment.DefaultModel;
         ApiKeyBox.Password = HermesEnvironment.ModelApiKey ?? "";
+        ApiKeyEnvBox.Text = HermesEnvironment.ModelApiKeyEnv ?? "";
         AuthHeaderBox.Text = HermesEnvironment.ModelAuthHeader;
         AuthSchemeBox.Text = HermesEnvironment.ModelAuthScheme;
         AuthTokenEnvBox.Text = HermesEnvironment.ModelAuthTokenEnv ?? "";
@@ -140,6 +141,7 @@ public sealed partial class SettingsPage : Page
             var baseUrl = BaseUrlBox.Text.Trim();
             var model = ModelBox.Text.Trim();
             var apiKey = ApiKeyBox.Password.Trim();
+            var apiKeyEnv = ApiKeyEnvBox.Text.Trim();
             var authMode = (AuthModeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "api_key";
             var authHeader = AuthHeaderBox.Text.Trim();
             var authScheme = AuthSchemeBox.Text.Trim();
@@ -149,6 +151,13 @@ public sealed partial class SettingsPage : Page
             if (string.IsNullOrEmpty(model))
             {
                 ModelSaveStatus.Text = "Model name is required.";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
+            }
+
+            if (authMode == "api_key_env" && string.IsNullOrWhiteSpace(apiKeyEnv))
+            {
+                ModelSaveStatus.Text = "API key env var is required for API Key (Env Var).";
                 ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
                 return;
             }
@@ -172,6 +181,7 @@ public sealed partial class SettingsPage : Page
                 baseUrl,
                 model,
                 apiKey,
+                apiKeyEnv,
                 authMode,
                 authHeader,
                 authScheme,
@@ -228,6 +238,7 @@ public sealed partial class SettingsPage : Page
         var usesProxyToken = mode is "oauth_proxy_env" or "oauth_proxy_command";
 
         ApiKeyBox.IsEnabled = mode == "api_key";
+        ApiKeyEnvBox.IsEnabled = mode == "api_key_env";
         AuthHeaderBox.IsEnabled = usesProxyToken;
         AuthSchemeBox.IsEnabled = usesProxyToken;
         AuthTokenEnvBox.IsEnabled = mode == "oauth_proxy_env";
