@@ -1,6 +1,7 @@
 namespace Hermes.Agent.LLM;
 
 using Hermes.Agent.Core;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -22,12 +23,6 @@ public sealed class OpenAiClient : IChatClient
         _config = config;
         _httpClient = httpClient;
         _credentialPool = credentialPool;
-
-        if (_credentialPool is null && !string.IsNullOrEmpty(config.ApiKey))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.ApiKey);
-        }
     }
 
     // ── Simple completion (backwards compatible) ──
@@ -101,10 +96,7 @@ public sealed class OpenAiClient : IChatClient
     {
         var payload = BuildPayload(messages, tools: null, stream: true);
         var json = JsonSerializer.Serialize(payload);
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"{_config.BaseUrl}/chat/completions")
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
+        using var request = await CreateRequestAsync($"{_config.BaseUrl}/chat/completions", json, ct);
 
         HttpResponseMessage? response = null;
         string? connectionError = null;
@@ -247,7 +239,7 @@ public sealed class OpenAiClient : IChatClient
         var url = $"{_config.BaseUrl}/chat/completions";
 
         // If credential pool is available, use it with retry on 401
-        if (_credentialPool is not null && _credentialPool.HasHealthyCredentials)
+        if (UsesApiKeyAuth && _credentialPool is not null && _credentialPool.HasHealthyCredentials)
         {
             const int maxRetries = 3;
             for (int attempt = 0; attempt < maxRetries; attempt++)
@@ -255,13 +247,7 @@ public sealed class OpenAiClient : IChatClient
                 var apiKey = _credentialPool.GetNext();
                 if (apiKey is null) break;
 
-                var request = new HttpRequestMessage(HttpMethod.Post, url)
-                {
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
-                request.Headers.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
-
+                using var request = await CreateRequestAsync(url, json, ct, apiKey);
                 var response = await _httpClient.SendAsync(request, ct);
 
                 // INV-004/005: Mark credential failed on auth or rate-limit errors and rotate
@@ -286,10 +272,145 @@ public sealed class OpenAiClient : IChatClient
         }
 
         // Fallback: use default header auth
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var fallbackResponse = await _httpClient.PostAsync(url, content, ct);
+        using var fallbackRequest = await CreateRequestAsync(url, json, ct);
+        var fallbackResponse = await _httpClient.SendAsync(fallbackRequest, ct);
         fallbackResponse.EnsureSuccessStatusCode();
         return fallbackResponse;
+    }
+
+    private bool UsesApiKeyAuth =>
+        string.IsNullOrWhiteSpace(_config.AuthMode) ||
+        string.Equals(_config.AuthMode, "api_key", StringComparison.OrdinalIgnoreCase);
+
+    private async Task<HttpRequestMessage> CreateRequestAsync(
+        string url,
+        string json,
+        CancellationToken ct,
+        string? apiKeyOverride = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        await ApplyAuthenticationAsync(request, apiKeyOverride, ct);
+        return request;
+    }
+
+    private async Task ApplyAuthenticationAsync(
+        HttpRequestMessage request,
+        string? apiKeyOverride,
+        CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(apiKeyOverride))
+        {
+            AddHeader(request, "Authorization", "Bearer", apiKeyOverride.Trim());
+            return;
+        }
+
+        var authMode = (_config.AuthMode ?? "api_key").Trim().ToLowerInvariant();
+        switch (authMode)
+        {
+            case "":
+            case "api_key":
+                if (!string.IsNullOrWhiteSpace(_config.ApiKey))
+                    AddHeader(request, "Authorization", "Bearer", _config.ApiKey.Trim());
+                return;
+
+            case "api_key_env":
+            {
+                var envName = _config.ApiKeyEnv?.Trim();
+                if (string.IsNullOrWhiteSpace(envName))
+                    throw new InvalidOperationException("model.api_key_env is required for auth_mode=api_key_env.");
+
+                var apiKey = Environment.GetEnvironmentVariable(envName);
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    throw new InvalidOperationException($"Environment variable '{envName}' is not set for API key auth.");
+
+                AddHeader(request, "Authorization", "Bearer", apiKey.Trim());
+                return;
+            }
+
+            case "none":
+                return;
+
+            case "oauth_proxy_env":
+            {
+                var envName = _config.AuthTokenEnv?.Trim();
+                if (string.IsNullOrWhiteSpace(envName))
+                    throw new InvalidOperationException("model.auth_token_env is required for auth_mode=oauth_proxy_env.");
+
+                var token = Environment.GetEnvironmentVariable(envName);
+                if (string.IsNullOrWhiteSpace(token))
+                    throw new InvalidOperationException($"Environment variable '{envName}' is not set for OAuth proxy auth.");
+
+                AddConfiguredProxyHeader(request, token.Trim());
+                return;
+            }
+
+            case "oauth_proxy_command":
+            {
+                var command = _config.AuthTokenCommand?.Trim();
+                if (string.IsNullOrWhiteSpace(command))
+                    throw new InvalidOperationException("model.auth_token_command is required for auth_mode=oauth_proxy_command.");
+
+                var token = await ExecuteTokenCommandAsync(command, ct);
+                AddConfiguredProxyHeader(request, token);
+                return;
+            }
+
+            default:
+                throw new InvalidOperationException($"Unsupported model.auth_mode '{_config.AuthMode}'.");
+        }
+    }
+
+    private void AddConfiguredProxyHeader(HttpRequestMessage request, string token)
+    {
+        var headerName = string.IsNullOrWhiteSpace(_config.AuthHeader)
+            ? "Authorization"
+            : _config.AuthHeader.Trim();
+        var authScheme = _config.AuthScheme ?? "Bearer";
+        AddHeader(request, headerName, authScheme, token);
+    }
+
+    private static void AddHeader(HttpRequestMessage request, string headerName, string? scheme, string token)
+    {
+        var headerValue = string.IsNullOrWhiteSpace(scheme)
+            ? token
+            : $"{scheme.Trim()} {token}";
+
+        request.Headers.Remove(headerName);
+        request.Headers.TryAddWithoutValidation(headerName, headerValue);
+    }
+
+    private static async Task<string> ExecuteTokenCommandAsync(string command, CancellationToken ct)
+    {
+        var startInfo = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("cmd.exe", $"/d /s /c \"{command}\"")
+            : new ProcessStartInfo("/bin/sh", $"-lc \"{command.Replace("\"", "\\\"", StringComparison.Ordinal)}\"");
+
+        startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
+        startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
+
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
+        await process.WaitForExitAsync(ct);
+
+        var stdout = (await stdoutTask).Trim();
+        var stderr = (await stderrTask).Trim();
+
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"OAuth proxy token command failed with exit code {process.ExitCode}: {stderr}");
+
+        if (string.IsNullOrWhiteSpace(stdout))
+            throw new InvalidOperationException("OAuth proxy token command returned an empty token.");
+
+        return stdout;
     }
 
     public async IAsyncEnumerable<StreamEvent> StreamAsync(
@@ -310,6 +431,8 @@ public sealed class OpenAiClient : IChatClient
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
+
+        await ApplyAuthenticationAsync(request, null, ct);
 
         HttpResponseMessage? response = null;
         Exception? connectError = null;

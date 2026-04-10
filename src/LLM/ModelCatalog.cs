@@ -52,6 +52,18 @@ public static class ModelCatalog
                 new("gpt-4o-mini",        "GPT-4o Mini",         128_000),
             },
 
+            ["google"] = new ModelEntry[]
+            {
+                new("models/gemini-3.1-pro-preview",             "Gemini 3.1 Pro Preview",              1_048_576),
+                new("models/gemini-3.1-pro-preview-customtools", "Gemini 3.1 Pro Preview Custom Tools", 1_048_576),
+                new("models/gemini-3.1-flash-lite-preview",      "Gemini 3.1 Flash Lite Preview",       1_048_576),
+                new("models/gemini-3-pro-preview",               "Gemini 3 Pro Preview",                1_048_576),
+                new("models/gemini-3-flash-preview",             "Gemini 3 Flash Preview",              1_048_576),
+                new("models/gemini-2.5-pro",                     "Gemini 2.5 Pro",                      1_048_576),
+                new("models/gemini-2.5-flash",                   "Gemini 2.5 Flash",                    1_048_576),
+                new("models/gemini-pro-latest",                  "Gemini Pro Latest",                   1_048_576),
+            },
+
             ["anthropic"] = new ModelEntry[]
             {
                 new("claude-opus-4-6",              "Claude Opus 4.6",             1_000_000),
@@ -135,7 +147,7 @@ public static class ModelCatalog
     /// <summary>All known provider names.</summary>
     public static IReadOnlyList<string> Providers { get; } = new[]
     {
-        "nous", "openai", "anthropic", "qwen", "deepseek", "minimax", "openrouter", "ollama", "local"
+        "nous", "openai", "google", "anthropic", "qwen", "deepseek", "minimax", "openrouter", "ollama", "local"
     };
 
     /// <summary>Default base URLs for known providers.</summary>
@@ -143,6 +155,7 @@ public static class ModelCatalog
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"]     = "https://api.openai.com/v1",
+            ["google"]     = "https://generativelanguage.googleapis.com/v1beta/openai",
             ["anthropic"]  = "https://api.anthropic.com",
             ["qwen"]       = "https://dashscope.aliyuncs.com/compatible-mode/v1",
             ["deepseek"]   = "https://api.deepseek.com/v1",
