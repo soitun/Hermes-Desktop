@@ -175,25 +175,23 @@ This file is a living document about the human I work with. It helps me provide 
     private void LoadModelSettings()
     {
         var provider = HermesEnvironment.ModelProvider.ToLowerInvariant();
-        var matchIndex = ProviderCombo.Items.Count - 1; // default to last (local)
-        for (int i = 0; i < ProviderCombo.Items.Count; i++)
-        {
-            if (ProviderCombo.Items[i] is ComboBoxItem item &&
-                string.Equals(item.Tag?.ToString(), provider, StringComparison.OrdinalIgnoreCase))
-            {
-                matchIndex = i;
-                break;
-            }
-        }
-        if (provider == "custom")
-            matchIndex = ProviderCombo.Items.Count - 1;
-
-        ProviderCombo.SelectedIndex = matchIndex;
+        var normalizedProvider = provider == "custom" ? "local" : provider;
+        SelectComboByTag(
+            ProviderCombo,
+            normalizedProvider,
+            Math.Max(0, ProviderCombo.Items.Count - 1));
         BaseUrlBox.Text = HermesEnvironment.ModelBaseUrl;
         ModelBox.Text = HermesEnvironment.DefaultModel;
         ApiKeyBox.Password = HermesEnvironment.ModelApiKey ?? "";
+        ApiKeyEnvBox.Text = HermesEnvironment.ModelApiKeyEnv ?? "";
+        AuthHeaderBox.Text = HermesEnvironment.ModelAuthHeader;
+        AuthSchemeBox.Text = HermesEnvironment.ModelAuthScheme;
+        AuthTokenEnvBox.Text = HermesEnvironment.ModelAuthTokenEnv ?? "";
+        AuthTokenCommandBox.Text = HermesEnvironment.ModelAuthTokenCommand ?? "";
+        SelectComboByTag(AuthModeCombo, HermesEnvironment.ModelAuthMode, fallbackIndex: 0);
+        UpdateAuthFieldState(HermesEnvironment.ModelAuthMode);
 
-        PopulateModelCombo(provider);
+        PopulateModelCombo(normalizedProvider);
         SelectCurrentModel(HermesEnvironment.DefaultModel);
 
         // Temperature
@@ -397,6 +395,12 @@ This file is a living document about the human I work with. It helps me provide 
             CompressionThresholdLabel.Text = e.NewValue.ToString("F2", CultureInfo.InvariantCulture);
     }
 
+    private void AuthModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var authMode = (AuthModeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "api_key";
+        UpdateAuthFieldState(authMode);
+    }
+
     // ═══════════════════════════════════════════
     //  Save handlers
     // ═══════════════════════════════════════════
@@ -405,10 +409,16 @@ This file is a living document about the human I work with. It helps me provide 
     {
         try
         {
-            var providerTag = (ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "custom";
+            var providerTag = (ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "local";
             var baseUrl = BaseUrlBox.Text.Trim();
             var model = ModelBox.Text.Trim();
             var apiKey = ApiKeyBox.Password.Trim();
+            var apiKeyEnv = ApiKeyEnvBox.Text.Trim();
+            var authMode = (AuthModeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "api_key";
+            var authHeader = AuthHeaderBox.Text.Trim();
+            var authScheme = AuthSchemeBox.Text.Trim();
+            var authTokenEnv = AuthTokenEnvBox.Text.Trim();
+            var authTokenCommand = AuthTokenCommandBox.Text.Trim();
 
             if (string.IsNullOrEmpty(model))
             {
@@ -417,27 +427,40 @@ This file is a living document about the human I work with. It helps me provide 
                 return;
             }
 
-            // Save model section (provider, base_url, default, temperature, max_tokens, optional api_key)
-            var extras = new Dictionary<string, string>
+            if (authMode == "api_key_env" && string.IsNullOrWhiteSpace(apiKeyEnv))
             {
-                ["provider"] = providerTag,
-                ["base_url"] = baseUrl,
-                ["default"] = model,
-                ["temperature"] = TemperatureSlider.Value.ToString("F1", CultureInfo.InvariantCulture),
-                ["max_tokens"] = ((int)MaxTokensBox.Value).ToString(CultureInfo.InvariantCulture),
-            };
-            // Preserve existing api_key if user didn't type a new one
-            if (!string.IsNullOrWhiteSpace(apiKey))
-                extras["api_key"] = apiKey;
-            else
-            {
-                var existingKey = HermesEnvironment.ModelApiKey;
-                if (!string.IsNullOrWhiteSpace(existingKey))
-                    extras["api_key"] = existingKey;
+                ModelSaveStatus.Text = "API key env var is required for API Key (Env Var).";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
             }
 
-            await HermesEnvironment.SaveConfigSectionAsync("model", extras);
+            if (authMode == "oauth_proxy_env" && string.IsNullOrWhiteSpace(authTokenEnv))
+            {
+                ModelSaveStatus.Text = "Token env var is required for OAuth Proxy (Env Token).";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
+            }
 
+            if (authMode == "oauth_proxy_command" && string.IsNullOrWhiteSpace(authTokenCommand))
+            {
+                ModelSaveStatus.Text = "Token command is required for OAuth Proxy (Command Token).";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
+            }
+
+            await HermesEnvironment.SaveModelConfigAsync(
+                providerTag,
+                baseUrl,
+                model,
+                apiKey,
+                apiKeyEnv,
+                authMode,
+                authHeader,
+                authScheme,
+                authTokenEnv,
+                authTokenCommand,
+                TemperatureSlider.Value.ToString("F1", CultureInfo.InvariantCulture),
+                ((int)MaxTokensBox.Value).ToString(CultureInfo.InvariantCulture));
             ModelSaveStatus.Text = "Saved successfully. Restart to apply.";
             ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOnlineBrush"];
         }
@@ -723,5 +746,33 @@ This file is a living document about the human I work with. It helps me provide 
         }
         if (combo.Items.Count > 0)
             combo.SelectedIndex = 0;
+    }
+
+    private static void SelectComboByTag(ComboBox combo, string? tag, int fallbackIndex)
+    {
+        for (int i = 0; i < combo.Items.Count; i++)
+        {
+            if (combo.Items[i] is ComboBoxItem item &&
+                string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+            {
+                combo.SelectedIndex = i;
+                return;
+            }
+        }
+
+        combo.SelectedIndex = fallbackIndex;
+    }
+
+    private void UpdateAuthFieldState(string? authMode)
+    {
+        var mode = (authMode ?? "api_key").ToLowerInvariant();
+        var usesProxyToken = mode is "oauth_proxy_env" or "oauth_proxy_command";
+
+        ApiKeyBox.IsEnabled = mode == "api_key";
+        ApiKeyEnvBox.IsEnabled = mode == "api_key_env";
+        AuthHeaderBox.IsEnabled = usesProxyToken;
+        AuthSchemeBox.IsEnabled = usesProxyToken;
+        AuthTokenEnvBox.IsEnabled = mode == "oauth_proxy_env";
+        AuthTokenCommandBox.IsEnabled = mode == "oauth_proxy_command";
     }
 }

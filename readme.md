@@ -178,6 +178,14 @@ model:
   default: claude-sonnet-4-6
   base_url: https://api.anthropic.com
   api_key: sk-ant-your-key-here
+  temperature: "0.7"
+  max_tokens: "4096"
+
+# OpenAI-compatible endpoint with OAuth proxy token (uncomment to use):
+#   auth_mode: oauth_proxy_command
+#   auth_header: Authorization
+#   auth_scheme: Bearer
+#   auth_token_command: oauth-proxy-helper print-access-token
 
 # Keys for runtime model swapping (optional)
 provider_keys:
@@ -185,6 +193,18 @@ provider_keys:
   openai: sk-proj-your-key
   qwen: sk-your-qwen-key
   ollama_url: http://127.0.0.1:11434/v1
+
+messaging:
+  telegram:
+    botToken: ""
+  discord:
+    botToken: ""
+
+security:
+  ssrf:
+    enabled: true
+  secretScanning:
+    enabled: true
 ```
 
 ## Project Structure

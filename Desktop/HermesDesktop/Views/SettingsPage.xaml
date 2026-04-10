@@ -116,6 +116,7 @@
                                       SelectionChanged="ProviderCombo_SelectionChanged">
                                 <ComboBoxItem Content="Nous (OpenRouter)" Tag="nous"/>
                                 <ComboBoxItem Content="OpenAI" Tag="openai"/>
+                                <ComboBoxItem Content="Google Gemini" Tag="google"/>
                                 <ComboBoxItem Content="Anthropic" Tag="anthropic"/>
                                 <ComboBoxItem Content="Qwen (Alibaba)" Tag="qwen"/>
                                 <ComboBoxItem Content="DeepSeek" Tag="deepseek"/>
@@ -159,6 +160,72 @@
                                          BorderBrush="{StaticResource AppStrokeBrush}"
                                          Foreground="White"/>
                         </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="AUTH MODE" Style="{StaticResource LabelTextStyle}"/>
+                            <ComboBox x:Name="AuthModeCombo" HorizontalAlignment="Stretch"
+                                      Background="{StaticResource AppInsetBrush}"
+                                      BorderBrush="{StaticResource AppStrokeBrush}"
+                                      SelectionChanged="AuthModeCombo_SelectionChanged">
+                                <ComboBoxItem Content="API Key" Tag="api_key"/>
+                                <ComboBoxItem Content="API Key (Env Var)" Tag="api_key_env"/>
+                                <ComboBoxItem Content="OAuth Proxy (Env Token)" Tag="oauth_proxy_env"/>
+                                <ComboBoxItem Content="OAuth Proxy (Command Token)" Tag="oauth_proxy_command"/>
+                                <ComboBoxItem Content="No Auth Header" Tag="none"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="API KEY ENV VAR" Style="{StaticResource LabelTextStyle}"/>
+                            <TextBox x:Name="ApiKeyEnvBox" PlaceholderText="GOOGLE_API_KEY"
+                                     Background="{StaticResource AppInsetBrush}"
+                                     BorderBrush="{StaticResource AppStrokeBrush}"
+                                     Foreground="White"/>
+                        </StackPanel>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="AUTH HEADER" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox x:Name="AuthHeaderBox" PlaceholderText="Authorization"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="AUTH SCHEME" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox x:Name="AuthSchemeBox" PlaceholderText="Bearer"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="TOKEN ENV VAR" Style="{StaticResource LabelTextStyle}"/>
+                            <TextBox x:Name="AuthTokenEnvBox" PlaceholderText="OPENAI_OAUTH_ACCESS_TOKEN"
+                                     Background="{StaticResource AppInsetBrush}"
+                                     BorderBrush="{StaticResource AppStrokeBrush}"
+                                     Foreground="White"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="TOKEN COMMAND" Style="{StaticResource LabelTextStyle}"/>
+                            <TextBox x:Name="AuthTokenCommandBox" PlaceholderText="oauth-proxy-helper print-access-token"
+                                     Background="{StaticResource AppInsetBrush}"
+                                     BorderBrush="{StaticResource AppStrokeBrush}"
+                                     Foreground="White"/>
+                        </StackPanel>
+
+                        <TextBlock Text="OAuth proxy modes let Hermes fetch a short-lived token from an environment variable or refresh command and attach it to an OpenAI-compatible proxy request."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                                   FontSize="12"/>
 
                         <!-- Temperature -->
                         <StackPanel Spacing="4">
