@@ -121,7 +121,7 @@ public sealed class DreamerService
     }
 
     /// <summary>
-    — Executes a single Dreamer cycle: runs RSS if due, builds research context, generates a new walk, scores and processes signals, may trigger a build sprint, attempts scheduled digests, records analytics, and updates status.
+    /// Executes a single Dreamer cycle: runs RSS if due, builds research context, generates a new walk, scores and processes signals, may trigger a build sprint, attempts scheduled digests, records analytics, and updates status.
     /// </summary>
     /// <param name="config">Configuration values governing this cycle's behaviour (timings, inputs, digests, autonomy, etc.).</param>
     /// <param name="ct">Cancellation token used to abort ongoing operations within the cycle.</param>
