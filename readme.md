@@ -6,265 +6,25 @@
 
 ![Hermes Agent Banner](docs/screenshots/banner.png)
 
-**A native Windows agentic framework** built with WinUI 3 and .NET 10 — featuring runtime model swapping, 27+ tools with parallel execution, production hardening, a persistent soul identity system, 94 skills, and a wiki-based knowledge base.
+A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
-**Current version: v2.3.0** | [Changelog](#changelog) | [Download (Portable)](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
-
-## What This Is
-
-Hermes Desktop is a **Windows-native agent runtime and control plane** — not a port of the upstream Hermes TUI or gateway. It focuses on:
-
-- **In-process agent runtime** with tool calling, permissions, and context management
-- **Native Windows UX** that upstream Hermes doesn't provide (soul browser, skills library, activity replay, visual settings, user profile)
-- **Runtime model swapping** between providers mid-conversation without restart
-- **Native Telegram and Discord** — messaging works without the Python CLI (v2.1.0)
-- **Production hardening** (compression cooldown, provider fallback, atomic persistence, secret scanning)
-
-Slack, WhatsApp, Matrix, and other platforms are supported via the Python gateway sidecar — the desktop app can configure and launch it from the Integrations page.
-
-## Screenshots
-
-| Dashboard | Chat |
-|-----------|------|
-| ![Dashboard](docs/screenshots/Screenshot%202026-04-05%20123632.png) | ![Chat](docs/screenshots/Screenshot%202026-04-05%20123637.png) |
-
-| Agent | Skills |
-|-------|--------|
-| ![Agent](docs/screenshots/Screenshot%202026-04-05%20123642.png) | ![Skills](docs/screenshots/Screenshot%202026-04-05%20123700.png) |
-
-| Memory | Integrations |
-|--------|-------------|
-| ![Memory](docs/screenshots/Screenshot%202026-04-05%20123706.png) | ![Integrations](docs/screenshots/Screenshot%202026-04-05%20123711.png) |
-
-## Features
-
-### Runtime Model Swapping (v2.0.0)
-
-Switch between providers mid-conversation with one click. No app restart needed.
-
-- **Claude Sonnet 4.6** (Anthropic) — with full tool calling
-- **GPT-5.4 / GPT-5.4 Mini** (OpenAI)
-- **Ollama** (local models — GLM-4.7 Flash, Gemma 4, Llama 4, etc.)
-- **Qwen** (Alibaba)
-- **DeepSeek, MiniMax, OpenRouter, Nous** — via settings
-
-Pattern from Claude Code: `ChatClientFactory` creates fresh client per swap, `SwappableChatClient` proxy routes all existing consumers transparently. API keys stored in `config.yaml` `provider_keys` section.
-
-### 27+ Built-in Tools
-
-| Category | Tools |
-|----------|-------|
-| **File System** | `read_file`, `write_file`, `edit_file`, `glob`, `grep`, `patch` |
-| **Shell** | `bash`, `terminal` |
-| **Web** | `web_fetch`, `web_search` |
-| **Agent** | `agent` (sub-agent spawner with 5 profiles), `ask_user` |
-| **Knowledge** | `memory`, `session_search`, `skill_invoke`, `wiki_search` |
-| **Code** | `code_sandbox` (Python/JS/C# with timeout isolation) |
-| **Safety** | `checkpoint` (filesystem snapshots for rollback) |
-| **Tasks** | `todo_write`, `schedule_cron` |
-| **Platforms** | `send_message` (gateway integration) |
-| **Dev** | `lsp` (Language Server Protocol) |
-| **Heavy** | `browser` (Playwright), `vision`, `tts`, `transcription`, `image_generation` |
-
-Tools execute in **parallel** for read-only operations (8-worker semaphore) and **sequentially** with permission gating for mutations.
-
-### Production Hardening (v1.8.0)
-
-Behavioral invariants learned from 168+ upstream PRs and 46+ production incidents:
-
-| Pattern | What It Prevents |
-|---------|-----------------|
-| **Compression cooldown** (600s) | Infinite token-burning retry loops |
-| **Provider fallback** with 5-min restoration | Stuck on expensive fallback provider |
-| **Credential pool rotation** on 401/429 | Silent key exhaustion |
-| **Atomic writes** (WriteThrough + FlushAsync) | Data loss on crash |
-| **Deterministic tool-call IDs** | Prompt cache misses (3-5x cost) |
-| **Secret scanning** on all tool outputs | API key exposure in transcripts |
-| **Orphan tool-result sanitization** | Corrupted context after compaction |
-
-### Soul Identity System
-
-Persistent identity stack with 6-layer prompt architecture:
-
-- **SOUL.md** — Agent personality, values, working style
-- **USER.md** — User expertise, preferences
-- **AGENTS.md** — Per-project rules and conventions
-- **Mistakes Journal** — Auto-extracted corrections from past errors
-- **Habits Journal** — Reinforced good patterns via dream consolidation
-- **12 Soul Templates** — Default, Creative, Teacher, Researcher, Minimalist, Pair Programmer, DevOps, Security, Startup CTO, Mentor, Claude, Nous Hermes
-
-### 94 Skills (74 Hermes + 20 Claude Code)
-
-Markdown-based capabilities with YAML frontmatter across 28 categories:
-
-| Category | Count | Examples |
-|----------|-------|---------|
-| **Claude Code** | 20 | commit, code-review, TDD, pdf, docx, xlsx, pptx, mcp-builder |
-| **Software Dev** | 7 | plan, systematic-debugging, writing-plans |
-| **GitHub** | 6 | issues, PR workflow, repo management |
-| **MLOps** | 8 | training, evaluation, HuggingFace, vector-databases |
-| **Research** | 4 | arxiv, blogwatcher, paper-writing |
-| **Creative** | 4 | ASCII art, excalidraw, songwriting |
-| **28 categories** | 94 | Apple, gaming, email, smart home, red-teaming, and more |
-
-### Desktop Application (8 Pages)
-
-| Page | Description |
-|------|-------------|
-| **Dashboard** | KPI cards, usage insights (tool calls, cost), platform badges, recent sessions |
-| **Chat** | Agent chat with tool calling, reasoning display, model switcher, side panels (Sessions, Files, Tasks, Replay) |
-| **Agent** | Identity editor (SOUL.md, USER.md), souls browser (12 templates), agent profiles |
-| **Skills** | Searchable library with category chips, color-coded badges, sort, system prompt preview |
-| **Memory** | Memory browser with type badges, project rules (AGENTS.md) editor |
-| **Buddy** | Companion with deterministic ASCII art, stats, personality |
-| **Integrations** | 6 messaging platform token configs + gateway start/stop |
-| **Settings** | 9 collapsible sections: User Profile, Model, Agent, Gateway, Memory, Display, Execution, Plugins, Paths |
-
-### Wiki Knowledge Base (v1.9.0)
-
-Persistent, markdown-based knowledge system with SQLite FTS5 full-text search:
-
-- WikiManager facade with CRUD, search, stats
-- Obsidian-compatible markdown files (git-trackable)
-- Path traversal prevention, WriteThrough crash-safe writes
-- Reduces LLM token usage ~15x vs raw code (80-line wiki page vs 800-line source file)
-
-### Context Runtime
-
-6-layer prompt architecture for optimal cache efficiency:
-
-```
-Layer 0: Soul Context (identity, user profile, project rules, journals)
-Layer 1: Stable System Prompt (cache anchor)
-Layer 2: Session State JSON (goal, constraints, decisions, entities)
-Layer 3: Retrieved Context (memories, wiki pages)
-Layer 4: Recent Conversation Turns (token-budgeted)
-Layer 5: Current User Message
-```
-
-With `TokenBudget` (8000 max, 6-turn window), `SessionState` tracking, and `CompactionManager` for iterative summarization under pressure.
-
-## Quick Start
-
-### Download & Run (no build required)
-
-> **Recommended while MSIX signing issues are being resolved upstream.**
-
-1. Go to [**Releases**](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest)
-2. Download `HermesDesktop-portable-x64.zip`
-3. Extract anywhere
-4. Double-click `HermesDesktop.exe`
-
-That's it. The portable build is **fully self-contained** — no .NET SDK, no MSIX registration, no Windows App Runtime installer. Works on any Windows 10 (1809+) or Windows 11 machine.
-
-On first launch, Hermes creates `%LOCALAPPDATA%\hermes` with your config, memory, transcripts, and logs. Add your API key to `%LOCALAPPDATA%\hermes\config.yaml` and you're live.
-
-### Why portable instead of MSIX?
-
-The Windows App SDK has open bugs affecting MSIX signing and registration ([WindowsAppSDK#4244](https://github.com/microsoft/WindowsAppSDK/issues/4244) and related). Rather than block users on Microsoft's fix timeline, we ship a portable build that sidesteps the entire MSIX toolchain. The app is identical — same WinUI 3 UI, same agent, same tools. You just don't get auto-update or a Start Menu entry (make your own shortcut).
-
-Once the MSIX pipeline is stable again, we'll resume publishing signed `.msix` packages alongside the portable zip.
+**v2.3.0** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
 ---
 
-### Build from Source
+## Get Started
 
-#### Prerequisites
+**Download and run** &mdash; no installer, no SDK, no setup wizard.
 
-- Windows 10 (1809+) or Windows 11
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Windows App SDK 1.7](https://learn.microsoft.com/windows/apps/windows-app-sdk/)
+1. Grab [`HermesDesktop-portable-x64.zip`](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) from Releases
+2. Extract anywhere
+3. Run `HermesDesktop.exe`
+4. Add your API key to `%LOCALAPPDATA%\hermes\config.yaml`
 
-#### Dev Mode (fast loop — unpackaged, no MSIX)
+Works on Windows 10 (1809+) and Windows 11. The portable build is fully self-contained &mdash; everything ships in the folder.
 
-```powershell
-git clone https://github.com/RedWoodOG/Hermes-Desktop.git
-cd Hermes-Desktop
-dotnet run --project Desktop/HermesDesktop/HermesDesktop.csproj -c Debug -p:Platform=x64 --launch-profile "HermesDesktop (Dev)"
-```
-
-The **HermesDesktop (Dev)** launch profile sets `HERMES_DESKTOP_SHOW_LOCAL_DETAILS=1` so paths and endpoints show in the UI. In Visual Studio / Cursor, pick that profile and press F5.
-
-#### Packaged Dev Loop (MSIX registration)
-
-```powershell
-git clone https://github.com/RedWoodOG/Hermes-Desktop.git
-cd Hermes-Desktop
-powershell -ExecutionPolicy Bypass -File .\Desktop\HermesDesktop\run-dev.ps1
-```
-
-The `run-dev.ps1` script builds, registers, and launches in one step.
-
-MSIX dev signing note: local certificate material such as `Desktop/HermesDesktop/packaging/dev-msix.pfx` must stay out of git. If you need a local test cert, see `Desktop/HermesDesktop/packaging/README.md` and generate one on your machine with `scripts/new-msix-dev-cert.ps1`.
-
-### Updating
-
-```powershell
-cd Hermes-Desktop
-git pull
-powershell -ExecutionPolicy Bypass -File .\Desktop\HermesDesktop\run-dev.ps1
-```
-
-### Clean Uninstall (remove previous version)
-
-If you're having issues or want a completely fresh install, run this **before** building the new version:
-
-```powershell
-# 1. Remove ALL registered Hermes Desktop app packages
-Get-AppxPackage *EDC29F63* | Remove-AppxPackage
-
-# 2. (Optional) Remove user data and config — only if you want a full reset
-# WARNING: This deletes your config, API keys, sessions, and memories
-# Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes"
-
-# 3. Clean build artifacts
-Remove-Item -Recurse -Force Desktop\HermesDesktop\bin -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force Desktop\HermesDesktop\obj -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force src\bin -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force src\obj -ErrorAction SilentlyContinue
-
-# 4. Rebuild and install fresh
-powershell -ExecutionPolicy Bypass -File .\Desktop\HermesDesktop\run-dev.ps1
-```
-
-To remove **only** the app package without deleting your config and data:
-
-```powershell
-Get-AppxPackage *EDC29F63* | Remove-AppxPackage
-```
-
-### Manual Build (if run-dev.ps1 doesn't work)
-
-```powershell
-dotnet build Desktop/HermesDesktop/HermesDesktop.csproj -c Debug
-cd Desktop\HermesDesktop\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64
-Add-AppxPackage -Register AppxManifest.xml
-Start-Process "shell:AppsFolder\EDC29F63-281C-4D34-8723-155C8122DEA2_1z32rh13vfry6!App"
-```
-
-### Build Portable Release (for distribution)
-
-```powershell
-.\scripts\publish-portable.ps1 -Zip
-# → Desktop\HermesDesktop\bin\HermesDesktop-portable-x64.zip
-```
-
-The zip is fully self-contained — ship it to anyone on Windows 10+. No SDK, no MSIX, no runtime installer. For ARM64: `.\scripts\publish-portable.ps1 -Platform ARM64 -Zip`.
-
-### Troubleshooting
-
-If the app does not show a window after launch:
-
-1. **Remove old packages first:** `Get-AppxPackage *EDC29F63* | Remove-AppxPackage`
-2. **Clean build:** Delete `bin/` and `obj/` folders, then rebuild
-3. **Check crash log:** `%LOCALAPPDATA%\hermes\hermes-cs\logs\desktop-startup.log`
-4. **Check Windows crash reports:** `C:\ProgramData\Microsoft\Windows\WER\ReportArchive`
-5. **Close overlay software:** MSI Afterburner, RTSS, and similar overlay/injection tools can interfere with WinUI apps — close them and retry
-6. **Verify .NET 10 SDK:** Run `dotnet --version` — should show `10.x.x`
-
-### Configuration
-
-Create `%LOCALAPPDATA%\hermes\config.yaml`:
+<details>
+<summary>Minimal config.yaml to get chatting</summary>
 
 ```yaml
 model:
@@ -272,99 +32,204 @@ model:
   default: claude-sonnet-4-6
   base_url: https://api.anthropic.com
   api_key: sk-ant-your-key-here
-  temperature: "0.7"
-  max_tokens: "4096"
 
-# OpenAI-compatible endpoint with OAuth proxy token (uncomment to use):
-#   auth_mode: oauth_proxy_command
-#   auth_header: Authorization
-#   auth_scheme: Bearer
-#   auth_token_command: oauth-proxy-helper print-access-token
-#
-# Auth is applied per outgoing request. Shared HttpClient instances such as the
-# Dreamer background clients must not store credentials in DefaultRequestHeaders.
-
-# Keys for runtime model swapping (optional)
+# Add more providers for runtime swapping (optional)
 provider_keys:
   anthropic: sk-ant-your-key
   openai: sk-proj-your-key
-  qwen: sk-your-qwen-key
   ollama_url: http://127.0.0.1:11434/v1
-
-platforms:
-  telegram:
-    token: ""
-  discord:
-    token: ""
-    require_mention: true
 ```
+
+First launch creates `%LOCALAPPDATA%\hermes` with config, memory, transcripts, and logs.
+
+</details>
+
+---
+
+## What It Does
+
+Hermes Desktop is an **in-process agent runtime** with a native Windows UI &mdash; not a chat wrapper. The agent runs locally, calls tools, remembers context across sessions, and can reach out to Telegram and Discord on your behalf.
+
+| | |
+|---|---|
+| ![Dashboard](docs/screenshots/Screenshot%202026-04-05%20123632.png) | ![Chat](docs/screenshots/Screenshot%202026-04-05%20123637.png) |
+| ![Agent](docs/screenshots/Screenshot%202026-04-05%20123642.png) | ![Skills](docs/screenshots/Screenshot%202026-04-05%20123700.png) |
+| ![Memory](docs/screenshots/Screenshot%202026-04-05%20123706.png) | ![Integrations](docs/screenshots/Screenshot%202026-04-05%20123711.png) |
+
+### Agent Runtime
+
+- **27+ tools** &mdash; file ops, shell, web fetch/search, code sandbox, browser automation, vision, TTS, and more
+- **Parallel execution** for read-only tools (8-worker semaphore), sequential with permission gating for mutations
+- **Runtime model swapping** &mdash; switch between Claude, GPT, Ollama, Qwen, DeepSeek, and others mid-conversation without restarting
+- **Sub-agent spawning** with 5 profiles for delegation and parallel work
+- **94 skills** across 28 categories (code review, TDD, GitHub workflows, MLOps, research, creative, and more)
+
+### Memory & Identity
+
+- **Soul system** &mdash; persistent personality (SOUL.md), user profile (USER.md), project rules (AGENTS.md), mistakes journal, habits journal
+- **12 soul templates** &mdash; Default, Creative, Teacher, Researcher, Pair Programmer, DevOps, Security, and more
+- **Wiki knowledge base** &mdash; markdown files with SQLite FTS5 full-text search, Obsidian-compatible, crash-safe writes
+- **Compiled memory stack** &mdash; wiki content injected into agent context automatically, configurable in `config.yaml`
+- **6-layer context runtime** &mdash; soul context, system prompt, session state, retrieved knowledge, recent turns, current message
+
+### Production Hardening
+
+Built from lessons across 168+ upstream PRs and 46+ production incidents:
+
+- Compression cooldown (600s) to prevent infinite token-burning loops
+- Provider fallback with automatic 5-minute restoration
+- Credential pool rotation on 401/429
+- Atomic writes (WriteThrough + FlushAsync) for crash safety
+- Secret scanning on all tool outputs
+- Deterministic tool-call IDs for prompt cache efficiency
+
+### Desktop App
+
+Eight pages: **Dashboard** (usage insights, KPIs, platform badges), **Chat** (tool calling, reasoning display, model switcher, side panels), **Agent** (identity editor, souls browser), **Skills** (searchable library with categories), **Memory** (browser + project rules editor), **Buddy** (companion with ASCII art), **Integrations** (Telegram, Discord, and more), **Settings** (model, memory, display, execution, paths).
+
+### Messaging
+
+Native C# adapters for **Telegram** and **Discord** &mdash; no Python CLI required. Slack, WhatsApp, Matrix, and others work through the Python gateway sidecar, configurable from the Integrations page.
+
+---
+
+## Build from Source
+
+For contributors or anyone who wants to hack on the code.
+
+**Requirements:** Windows 10+, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), [Windows App SDK 1.7](https://learn.microsoft.com/windows/apps/windows-app-sdk/)
+
+### Dev mode (recommended)
+
+```powershell
+git clone https://github.com/RedWoodOG/Hermes-Desktop.git
+cd Hermes-Desktop
+dotnet run --project Desktop/HermesDesktop/HermesDesktop.csproj -c Debug -p:Platform=x64 --launch-profile "HermesDesktop (Dev)"
+```
+
+Runs unpackaged with no MSIX registration. The Dev profile enables `HERMES_DESKTOP_SHOW_LOCAL_DETAILS` so paths and endpoints are visible in the UI. In Visual Studio or Cursor, select the **HermesDesktop (Dev)** launch profile and press F5.
+
+### Packaged dev loop
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Desktop\HermesDesktop\run-dev.ps1
+```
+
+Builds, registers the MSIX package, and launches. Use `-ShowLocalDetails` to surface paths in the UI.
+
+### Build a portable zip
+
+```powershell
+.\scripts\publish-portable.ps1 -Zip
+```
+
+Produces `Desktop\HermesDesktop\bin\HermesDesktop-portable-x64.zip` &mdash; self-contained, ready to distribute. For ARM64: add `-Platform ARM64`.
+
+<details>
+<summary>Updating, clean uninstall, manual build, troubleshooting</summary>
+
+**Update:**
+
+```powershell
+cd Hermes-Desktop
+git pull
+dotnet run --project Desktop/HermesDesktop/HermesDesktop.csproj -c Debug -p:Platform=x64 --launch-profile "HermesDesktop (Dev)"
+```
+
+**Clean uninstall (MSIX):**
+
+```powershell
+Get-AppxPackage *EDC29F63* | Remove-AppxPackage
+Remove-Item -Recurse -Force Desktop\HermesDesktop\bin, Desktop\HermesDesktop\obj, src\bin, src\obj -ErrorAction SilentlyContinue
+```
+
+To also remove user data: `Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes"`
+
+**Manual build (if scripts don't work):**
+
+```powershell
+dotnet build Desktop/HermesDesktop/HermesDesktop.csproj -c Debug -p:Platform=x64
+cd Desktop\HermesDesktop\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64
+Add-AppxPackage -Register AppxManifest.xml
+Start-Process "shell:AppsFolder\EDC29F63-281C-4D34-8723-155C8122DEA2_1z32rh13vfry6!App"
+```
+
+**Troubleshooting:**
+
+- App window doesn't appear? Remove old packages (`Get-AppxPackage *EDC29F63* | Remove-AppxPackage`), clean `bin/` and `obj/`, rebuild.
+- Check crash logs: `%LOCALAPPDATA%\hermes\hermes-cs\logs\desktop-startup.log`
+- Check Windows crash reports: `C:\ProgramData\Microsoft\Windows\WER\ReportArchive`
+- Close overlay software (MSI Afterburner, RTSS) &mdash; these can interfere with WinUI startup.
+- Verify SDK: `dotnet --version` should show `10.x.x`
+- Build errors on `BriefService` or `DashboardPage`? See [issue #25](https://github.com/RedWoodOG/Hermes-Desktop/issues/25).
+- Use `-p:Platform=x64`, not `AMD64` &mdash; see `Desktop/HermesDesktop/AGENTS.md` for details.
+
+**MSIX signing:** Local cert material (`Desktop/HermesDesktop/packaging/dev-msix.pfx`) must stay out of git. Generate a dev cert with `scripts/new-msix-dev-cert.ps1`.
+
+</details>
+
+---
 
 ## Project Structure
 
 ```
-HermesDesktop/
-├── src/                              # Core agent library (Hermes.Core)
-│   ├── Core/                         # Agent loop, models, interfaces
-│   ├── Tools/                        # 27+ tool implementations
-│   ├── LLM/                          # Provider abstraction, ChatClientFactory,
-│   │                                 #   SwappableChatClient, CredentialPool
-│   ├── soul/                         # SoulService, SoulRegistry, AgentProfiles
-│   ├── wiki/                         # WikiManager, FTS5 search, index, schema
-│   ├── Context/                      # PromptBuilder, TokenBudget, ContextManager
-│   ├── compaction/                   # CompactionManager (600s cooldown, iterative)
-│   ├── memory/                       # MemoryManager, relevance filtering
-│   ├── permissions/                  # PermissionManager, 5 modes
-│   ├── skills/                       # SkillManager, SkillsHub
-│   ├── transcript/                   # TranscriptStore (WriteThrough JSONL)
-│   ├── security/                     # SecretScanner, SSRF protection
-│   ├── gateway/                      # GatewayService, platform adapters
-│   ├── plugins/                      # PluginManager, IPlugin
-│   ├── analytics/                    # InsightsService
-│   ├── dream/                        # AutoDreamService (consolidation)
-│   └── execution/                    # Docker, SSH, Modal, Daytona backends
-├── Desktop/HermesDesktop/            # WinUI 3 desktop application
-│   ├── Views/                        # 8 pages + side panels
-│   ├── Services/                     # HermesChatService, HermesEnvironment
-│   ├── Models/                       # ChatMessageItem, view models
-│   └── Controls/                     # CodeBlock, PermissionDialog
-├── skills/                           # 94 skill definitions (28 categories)
-├── docs/internal/                    # Architecture strategy document
+Hermes.CS/
+├── src/                         # Core agent library (Hermes.Core)
+│   ├── Core/                    #   Agent loop, models, tool interfaces
+│   ├── Tools/                   #   27+ tool implementations
+│   ├── LLM/                     #   Provider abstraction, model swapping
+│   ├── soul/                    #   Identity system, templates, profiles
+│   ├── wiki/                    #   WikiManager, FTS5 search
+│   ├── Context/                 #   Prompt builder, token budget
+│   ├── dreamer/                 #   Background free-association worker
+│   ├── gateway/                 #   Telegram, Discord adapters
+│   └── ...                      #   memory, skills, security, plugins, etc.
+├── Desktop/HermesDesktop/       # WinUI 3 desktop application
+│   ├── Views/                   #   8 pages + side panels
+│   ├── Services/                #   Chat bridge, environment, diagnostics
+│   └── Strings/                 #   Localization (en-us, zh-cn)
+├── skills/                      # 94 skill definitions
+├── scripts/                     # Build, publish, install scripts
 └── HermesDesktop.slnx
 ```
 
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| **v2.3.0** | 2026-04-12 | **Portable release** — self-contained zip, no MSIX/SDK required; compiled memory stack (wiki knowledge base, configurable via `config.yaml`); `publish-portable.ps1` script; Dev launch profile for unpackaged `dotnet run` |
-| v2.2.1 | 2026-04-10 | Fix startup crash on fresh clone, safe file ops, one-click installer, clean uninstall instructions |
-| v2.2.0 | 2026-04-10 | User Profile section in Settings (name, role, working style, project dir) |
-| v2.1.1 | 2026-04-10 | Fix skills discovery (dynamic repo root), model dropdown (shows user config first), memory paths |
-| v2.1.0 | 2026-04-10 | Native C# gateway — Telegram and Discord work without Python CLI |
-| v2.0.1 | 2026-04-09 | Fix dark text theme, first-run skill copy, gateway requirement notice |
-| v2.0.0 | 2026-04-09 | Runtime model swapping (Claude/OpenAI/Ollama/Qwen mid-conversation) |
-| v1.9.1 | 2026-04-09 | Agent tool loop test (207 pass), Chat UX (tool count, session copy) |
-| v1.9.0 | 2026-04-09 | Wiki Phase 1: core data layer with SQLite FTS5 search |
-| v1.8.0 | 2026-04-09 | Production hardening: compression cooldown, provider fallback, atomic writes, deterministic IDs |
-| v1.7.0 | 2026-04-09 | Anthropic tool calling (Claude can now use all tools) |
-| v1.6.0 | 2026-04-09 | Execution backends, plugins, analytics dashboard |
-| v1.5.0 | 2026-04-08 | Parallel tool execution (8 workers for read-only tools) |
-| v1.4.0 | 2026-04-08 | +7 new tools (21 total), YAML quoting, partial save fix |
-| v1.3.0 | 2026-04-08 | Chat routes through full Agent pipeline (tools work in chat) |
-| v1.2.0 | 2026-04-08 | Settings page overhaul (8 collapsible sections) |
-| v1.1.0 | 2026-04-08 | Skills page redesign (grouped categories, color badges, sort) |
-
 ## Tech Stack
 
-- **.NET 10** with C# 13
-- **WinUI 3** (Windows App SDK 1.7) with Mica backdrop
-- **SQLite** (FTS5 full-text search for wiki)
-- **Microsoft.Playwright** (browser automation)
-- **System.Text.Json** (serialization)
+**.NET 10** / C# 13 &bull; **WinUI 3** (Windows App SDK 1.7, Mica backdrop) &bull; **SQLite** FTS5 &bull; **Playwright** &bull; **System.Text.Json**
 
-## Based On
+## Changelog
 
-Built on the [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent) architecture. Hermes Desktop is a native Windows implementation that brings agentic AI to the desktop with a modern WinUI 3 interface. This project exists to show appreciation for the incredible work by the NousResearch team — please support them and use the product they created.
+| Version | Date | Highlights |
+|---------|------|------------|
+| **v2.3.0** | 2026-04-12 | Portable release (self-contained zip, no MSIX required), compiled memory stack, wiki tool, Dev launch profile, `publish-portable.ps1` |
+| v2.2.1 | 2026-04-10 | Fix startup crash on fresh clone, safe file ops, one-click installer |
+| v2.2.0 | 2026-04-10 | User Profile section in Settings |
+| v2.1.0 | 2026-04-10 | Native C# gateway &mdash; Telegram and Discord without Python CLI |
+| v2.0.0 | 2026-04-09 | Runtime model swapping (Claude/OpenAI/Ollama/Qwen mid-conversation) |
+| v1.9.0 | 2026-04-09 | Wiki knowledge base with SQLite FTS5 search |
+| v1.8.0 | 2026-04-09 | Production hardening: cooldowns, fallback, atomic writes, secret scanning |
+| v1.7.0 | 2026-04-09 | Anthropic tool calling |
+| v1.5.0 | 2026-04-08 | Parallel tool execution (8 workers) |
+
+<details>
+<summary>Earlier releases</summary>
+
+| Version | Date | Highlights |
+|---------|------|------------|
+| v2.1.1 | 2026-04-10 | Fix skills discovery, model dropdown, memory paths |
+| v2.0.1 | 2026-04-09 | Fix dark theme, first-run skill copy, gateway notice |
+| v1.9.1 | 2026-04-09 | Agent tool loop tests (207 pass), Chat UX |
+| v1.6.0 | 2026-04-09 | Execution backends, plugins, analytics dashboard |
+| v1.4.0 | 2026-04-08 | +7 new tools (21 total) |
+| v1.3.0 | 2026-04-08 | Chat routes through full Agent pipeline |
+| v1.2.0 | 2026-04-08 | Settings page overhaul |
+| v1.1.0 | 2026-04-08 | Skills page redesign |
+
+</details>
+
+## Acknowledgments
+
+Built on the [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent) architecture. This project exists to show appreciation for the NousResearch team &mdash; please support them and use the product they created.
 
 ## License
 
