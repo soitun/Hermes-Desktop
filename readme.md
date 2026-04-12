@@ -44,6 +44,33 @@ First launch creates `%LOCALAPPDATA%\hermes` with config, memory, transcripts, a
 
 </details>
 
+### Updating
+
+**Portable (zip from Releases)** &mdash; your data lives outside the app folder.
+
+1. Quit Hermes Desktop (system tray → Exit, or close the window).
+2. Download the latest [`HermesDesktop-portable-x64.zip`](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest).
+3. Either **replace the folder** (delete the old extracted folder, extract the new zip to the same path) **or** extract to a new folder and run `HermesDesktop.exe` from there &mdash; either way, **do not delete** `%LOCALAPPDATA%\hermes`; your `config.yaml`, sessions, memory, and wiki stay there.
+4. Start the new `HermesDesktop.exe`.
+
+There is no in-app auto-updater yet; check [Releases](https://github.com/RedWoodOG/Hermes-Desktop/releases) when you want a new build.
+
+**Built from git (dev / `dotnet run`)** &mdash; pull and run again:
+
+```powershell
+cd Hermes-Desktop
+git pull
+dotnet run --project Desktop/HermesDesktop/HermesDesktop.csproj -c Debug -p:Platform=x64 --launch-profile "HermesDesktop (Dev)"
+```
+
+**MSIX (`run-dev.ps1`)** &mdash; pull, then re-register:
+
+```powershell
+cd Hermes-Desktop
+git pull
+powershell -ExecutionPolicy Bypass -File .\Desktop\HermesDesktop\run-dev.ps1
+```
+
 ---
 
 ## What It Does
@@ -126,15 +153,9 @@ Builds, registers the MSIX package, and launches. Use `-ShowLocalDetails` to sur
 Produces `Desktop\HermesDesktop\bin\HermesDesktop-portable-x64.zip` &mdash; self-contained, ready to distribute. For ARM64: add `-Platform ARM64`.
 
 <details>
-<summary>Updating, clean uninstall, manual build, troubleshooting</summary>
+<summary>Clean uninstall, manual build, troubleshooting</summary>
 
-**Update:**
-
-```powershell
-cd Hermes-Desktop
-git pull
-dotnet run --project Desktop/HermesDesktop/HermesDesktop.csproj -c Debug -p:Platform=x64 --launch-profile "HermesDesktop (Dev)"
-```
+**Updating from git** is covered above under [Updating](#updating) (portable zip vs `dotnet run` vs `run-dev.ps1`).
 
 **Clean uninstall (MSIX):**
 
