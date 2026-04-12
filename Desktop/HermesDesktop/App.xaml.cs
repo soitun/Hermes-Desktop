@@ -46,6 +46,12 @@ public partial class App : Application
     /// </remarks>
     public static IServiceProvider Services { get; private set; } = UninitializedAppServiceProvider.Instance;
 
+    /// <summary>
+    /// Initializes application components and wires up application-level unhandled exception handling.
+    /// </summary>
+    /// <remarks>
+    /// Registers OnAppUnhandledException to run when the app encounters an unhandled exception (used to cancel background workers such as the Dreamer loop).
+    /// </remarks>
     public App()
     {
         InitializeComponent();
@@ -53,6 +59,9 @@ public partial class App : Application
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
     }
 
+    /// <summary>
+    /// Cancels the Dreamer background loop when the application encounters an unhandled exception.
+    /// </summary>
     private void OnAppUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         var logger = TryGetAppLogger();
@@ -218,6 +227,11 @@ public partial class App : Application
         }
     }
 
+    /// <summary>
+    /// Initializes dependency injection, creates the main window, and activates the application UI.
+    /// </summary>
+    /// <param name="args">Activation arguments provided by the system when the application is launched.</param>
+    /// <exception cref="Exception">On failure during startup the exception is reported via startup diagnostics and rethrown.</exception>
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         try
@@ -233,6 +247,15 @@ public partial class App : Application
         }
     }
 
+    /// <summary>
+    /// Configure dependency injection, register all application services, and perform post-build initialization.
+    /// </summary>
+    /// <remarks>
+    /// Ensures the Hermes home and project directories exist and creates default SOUL.md and USER.md if missing (non-fatal on failure).
+    /// Registers core services such as logging, chat clients, transcript and memory stores, skill and task managers, wiki, soul services, agent and orchestration services, tools and plugins, analytics, and Dreamer status.
+    /// After building the provider it registers tools, initializes MCP (fire-and-forget), wires the UI permission callback, and starts native gateway and Dreamer background components as appropriate.
+    /// </remarks>
+    /// <returns>The built <see cref="ServiceProvider"/> containing the registered application services.</returns>
     private static ServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
@@ -502,7 +525,14 @@ public partial class App : Application
         return provider;
     }
 
-    /// <summary>Start the Dreamer background loop (sleeps when dreamer.enabled is false).</summary>
+    /// <summary>
+    /// Initializes Dreamer components and starts its continuous background loop.
+    /// </summary>
+    /// <param name="hermesHome">Path to the Hermes home directory (used for Dreamer layout and config).</param>
+    /// <param name="projectDir">Path to the project directory (used to locate the transcripts directory).</param>
+    /// <remarks>
+    /// This method creates/uses long-lived HTTP clients, loads Dreamer configuration and room layout, constructs the DreamerService and related helpers, sets a static cancellation token source, and launches the Dreamer loop via a background task. Startup failures are non-fatal: exceptions are caught and written to debug output only.
+    /// </remarks>
     private static void StartDreamerBackground(IServiceProvider provider, string hermesHome, string projectDir)
     {
         var logger = provider.GetService<ILogger<App>>();
@@ -840,7 +870,13 @@ public partial class App : Application
 
     /// <summary>
     /// Load MCP server configs and connect (fire-and-forget on startup).
+    /// <summary>
+    /// Initializes the MCP subsystem by loading MCP configuration files from standard locations, connecting to configured MCP servers, and registering any discovered MCP tools with the Agent and tool registry.
     /// </summary>
+    /// <param name="projectDir">Path to the project directory; used as one of the locations to search for an mcp.json configuration file.</param>
+    /// <remarks>
+    /// Initialization errors are non-fatal: exceptions are logged and startup continues without MCP tools.
+    /// </remarks>
     private static async void InitializeMcpAsync(IServiceProvider services, string projectDir)
     {
         try

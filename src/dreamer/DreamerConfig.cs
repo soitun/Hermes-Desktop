@@ -26,7 +26,11 @@ public sealed class DreamerConfig
     public bool InputInbox { get; set; } = true;
     public IReadOnlyList<string> RssFeeds { get; set; } = Array.Empty<string>();
 
-    public static string ResolveHermesHome() =>
+    /// <summary>
+            /// Resolves the base directory for Hermes configuration and data.
+            /// </summary>
+            /// <returns>`HERMES_HOME` environment variable value if it is set and non-empty; otherwise the path named "hermes" under the current user's LocalApplicationData folder.</returns>
+            public static string ResolveHermesHome() =>
         Environment.GetEnvironmentVariable("HERMES_HOME") is { Length: > 0 } h
             ? h
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "hermes");
@@ -106,9 +110,24 @@ public sealed class DreamerConfig
         return c;
     }
 
+    /// <summary>
+    /// Retrieve the trimmed value associated with a key from the dictionary.
+    /// </summary>
+    /// <param name="kv">The dictionary of key/value pairs to search.</param>
+    /// <param name="key">The key to look up.</param>
+    /// <returns>The trimmed value if the key exists; otherwise <c>null</c>.</returns>
     private static string? Get(Dictionary<string, string> kv, string key) =>
         kv.TryGetValue(key, out var v) ? v.Trim() : null;
 
+    /// <summary>
+    /// Extracts flat key/value pairs from the top-level <c>dreamer:</c> section of a configuration file.
+    /// </summary>
+    /// <param name="configPath">Path to the configuration file to read.</param>
+    /// <returns>
+    /// A case-insensitive dictionary mapping keys to their trimmed values (surrounding single or double quotes removed)
+    /// found under the <c>dreamer:</c> block. Parsing stops when the next top-level key is encountered; returns an empty
+    /// dictionary if the block is missing or contains no valid entries.
+    /// </returns>
     private static Dictionary<string, string> ReadDreamerSection(string configPath)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -147,7 +166,11 @@ public sealed class DreamerConfig
         return result;
     }
 
-    public LlmConfig ToWalkLlmConfig() =>
+    /// <summary>
+        /// Create an LlmConfig populated with this instance's walk model settings.
+        /// </summary>
+        /// <returns>An LlmConfig configured for the walk model: provider, model, base URL, temperature, and max tokens from this config; `ApiKey` is empty and `AuthMode` is "none".</returns>
+        public LlmConfig ToWalkLlmConfig() =>
         new()
         {
             Provider = WalkProvider,
@@ -159,6 +182,10 @@ public sealed class DreamerConfig
             AuthMode = "none"
         };
 
+    /// <summary>
+    /// Creates an "echo" LLM configuration that mirrors the walk model's provider, model, base URL, and API key but uses fixed echo-oriented parameters.
+    /// </summary>
+    /// <returns>An LlmConfig with the same Provider, Model, BaseUrl, and ApiKey as the walk config, Temperature = 0.2, MaxTokens = 1024, and AuthMode = "none".</returns>
     public LlmConfig ToEchoLlmConfig()
     {
         var w = ToWalkLlmConfig();

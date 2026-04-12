@@ -89,7 +89,10 @@ public sealed class InsightsService
         }
     }
 
-    /// <summary>Record a session.</summary>
+    /// <summary>
+    /// Increments the total session count and records one session for the specified platform.
+    /// </summary>
+    /// <param name="platform">The platform identifier for the session (for example, "web" or "mobile").</param>
     public void RecordSession(string platform)
     {
         lock (_lock)
@@ -101,7 +104,9 @@ public sealed class InsightsService
         }
     }
 
-    /// <summary>Increment Dreamer background-worker counters (walks, digests, builds).</summary>
+    /// <summary>
+    /// Increments the persisted Dreamer walks counter in the insights snapshot, initializing the Dreamer counters if they do not exist.
+    /// </summary>
     public void RecordDreamerWalk() => BumpDreamer(d => d.Walks++);
     public void RecordDreamerDigest() => BumpDreamer(d => d.Digests++);
     public void RecordDreamerBuild() => BumpDreamer(d => d.Builds++);
@@ -113,6 +118,10 @@ public sealed class InsightsService
         d.LastStartupFailureMessage = exception.Message;
     });
 
+    /// <summary>
+    /// Ensures the service's Dreamer stats object exists and applies the provided delegate to update it under the instance lock.
+    /// </summary>
+    /// <param name="bump">A delegate that receives the DreamerInsightStats instance and modifies one or more counters.</param>
     private void BumpDreamer(Action<DreamerInsightStats> bump)
     {
         lock (_lock)

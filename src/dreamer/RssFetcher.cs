@@ -14,6 +14,12 @@ public sealed class RssFetcher
     private readonly ILogger<RssFetcher> _logger;
     private DateTime _lastRunUtc = DateTime.MinValue;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RssFetcher"/> class with the HTTP client, target room, and logger dependencies.
+    /// </summary>
+    /// <param name="http">The <see cref="HttpClient"/> used to download feed content.</param>
+    /// <param name="room">The <see cref="DreamerRoom"/> that provides the inbox RSS directory for output files.</param>
+    /// <param name="logger">The logger used to record warnings for individual feed failures.</param>
     public RssFetcher(HttpClient http, DreamerRoom room, ILogger<RssFetcher> logger)
     {
         _http = http;
@@ -21,7 +27,16 @@ public sealed class RssFetcher
         _logger = logger;
     }
 
-    /// <summary>Run at most once per six hours when feeds are configured.</summary>
+    /// <summary>
+    /// Fetches configured RSS/Atom feeds and writes per-feed markdown digests to the room inbox when due.
+    /// </summary>
+    /// <remarks>
+    /// Execution is throttled to at most once every six hours; if <paramref name="feeds"/> is empty or the throttle interval has not elapsed, the method returns immediately.
+    /// For each URL it attempts to download, parse (RSS or Atom) and write a markdown file containing up to 8 entries. Individual feed failures are logged as warnings and do not stop processing of other feeds. Cancellation is honored and will be rethrown.
+    /// The internal last-run timestamp is updated only if at least one feed write succeeds.
+    /// </remarks>
+    /// <param name="feeds">A read-only list of feed URLs to fetch.</param>
+    /// <param name="ct">A cancellation token that cancels network and file operations.</param>
     public async Task RunIfDueAsync(IReadOnlyList<string> feeds, CancellationToken ct)
     {
         if (feeds.Count == 0) return;

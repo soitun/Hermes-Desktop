@@ -31,6 +31,9 @@ public sealed partial class DashboardPage : Page
     private readonly RuntimeStatusService _runtimeStatusService = App.Services.GetRequiredService<RuntimeStatusService>();
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _dreamerTimer;
 
+    /// <summary>
+    /// Initializes a new instance of DashboardPage and configures page unload cleanup.
+    /// </summary>
     public DashboardPage()
     {
         InitializeComponent();
@@ -42,6 +45,9 @@ public sealed partial class DashboardPage : Page
         RefreshDreamerStatus();
     }
 
+    /// <summary>
+    /// Cleans up the Dreamer status refresh timer when the page is unloaded.
+    /// </summary>
     private void OnPageUnloaded(object sender, RoutedEventArgs e)
     {
         if (_dreamerTimer is not null)
@@ -58,6 +64,9 @@ public sealed partial class DashboardPage : Page
 
     // ── Lifecycle ──
 
+    /// <summary>
+    /// Initializes dashboard data and UI when the page is loaded.
+    /// </summary>
     private async void OnPageLoaded(object sender, RoutedEventArgs e)
     {
         LoadStats();
@@ -68,6 +77,9 @@ public sealed partial class DashboardPage : Page
         StartDreamerStatusRefresh();
     }
 
+    /// <summary>
+    /// Starts periodic updates of the Dreamer status at four-second intervals.
+    /// </summary>
     private void StartDreamerStatusRefresh()
     {
         // Guard against duplicate timers (DispatcherQueueTimer has no IsEnabled; null means not created or already torn down)
@@ -81,6 +93,9 @@ public sealed partial class DashboardPage : Page
         _dreamerTimer.Start();
     }
 
+    /// <summary>
+    /// Updates Dreamer-related UI text fields from the current Dreamer status snapshot.
+    /// </summary>
     private void RefreshDreamerStatus()
     {
         var st = App.Services.GetService<DreamerStatus>();

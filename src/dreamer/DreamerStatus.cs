@@ -11,6 +11,7 @@ public sealed class DreamerStatus
     private string _startupFailureMessage = "";
     private double _topSignalScore;
     private string _topSignalSlug = "";
+    private string _lastLocalDigestHint = "";
 
     public DreamerStatusSnapshot GetSnapshot()
     {
@@ -23,7 +24,8 @@ public sealed class DreamerStatus
                 _lastPostcardPreview,
                 _startupFailureMessage,
                 _topSignalScore,
-                _topSignalSlug);
+                _topSignalSlug,
+                _lastLocalDigestHint);
         }
     }
 
@@ -62,6 +64,11 @@ public sealed class DreamerStatus
     {
         lock (_lock) { _lastPostcardPreview = text; }
     }
+
+    public void SetLastLocalDigestHint(string relativePath)
+    {
+        lock (_lock) { _lastLocalDigestHint = relativePath; }
+    }
 }
 
 public readonly record struct DreamerStatusSnapshot(
@@ -71,4 +78,5 @@ public readonly record struct DreamerStatusSnapshot(
     string LastPostcardPreview,
     string StartupFailureMessage,
     double TopSignalScore,
-    string TopSignalSlug);
+    string TopSignalSlug,
+    string LastLocalDigestHint);

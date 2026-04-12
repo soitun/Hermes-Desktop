@@ -29,6 +29,13 @@ public sealed class DreamerService
     private readonly RssFetcher? _rss;
     private int _walkNumber;
 
+    /// <summary>
+    /// Initializes a DreamerService and configures its runtime dependencies and working components.
+    /// </summary>
+    /// <param name="hermesHome">The base Hermes runtime directory used for paths and runtime state.</param>
+    /// <param name="configPath">File path to the Dreamer configuration file that will be reloaded each cycle.</param>
+    /// <param name="transcriptsDir">Directory containing transcript `*.jsonl` files used to build research context.</param>
+    /// <param name="room">The DreamerRoom that provides workspace directories (walks, inbox, feedback) and layout management.</param>
     public DreamerService(
         string hermesHome,
         string configPath,
@@ -60,6 +67,11 @@ public sealed class DreamerService
         _build = new BuildSprint(room, loggerFactory.CreateLogger<BuildSprint>());
     }
 
+    /// <summary>
+    /// Runs the Dreamer background loop: reloads configuration each cycle and executes periodic walk cycles until cancelled.
+    /// </summary>
+    /// <param name="stoppingToken">A cancellation token used to request graceful shutdown of the loop.</param>
+    /// <returns>A task that completes when the loop exits.</returns>
     public async Task RunForeverAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("DreamerService loop starting (config reload each cycle)");
@@ -108,6 +120,11 @@ public sealed class DreamerService
         _logger.LogInformation("DreamerService stopped");
     }
 
+    /// <summary>
+    — Executes a single Dreamer cycle: runs RSS if due, builds research context, generates a new walk, scores and processes signals, may trigger a build sprint, attempts scheduled digests, records analytics, and updates status.
+    /// </summary>
+    /// <param name="config">Configuration values governing this cycle's behaviour (timings, inputs, digests, autonomy, etc.).</param>
+    /// <param name="ct">Cancellation token used to abort ongoing operations within the cycle.</param>
     private async Task RunOneCycleAsync(DreamerConfig config, CancellationToken ct)
     {
         _status.SetPhase("walking");
@@ -188,6 +205,11 @@ public sealed class DreamerService
         _status.SetPhase("idle");
     }
 
+    /// <summary>
+    /// Sends a scheduled Discord digest containing the most recent walk when a configured digest time is due and not already sent for the day.
+    /// </summary>
+    /// <param name="config">Dreamer configuration providing DiscordChannelId and DigestTimes (each entry formatted as "H:M").</param>
+    /// <param name="lastWalk">Text of the last walk; the message body is truncated to 1500 characters.</param>
     private async Task MaybeSendDigestAsync(DreamerConfig config, string lastWalk, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(config.DiscordChannelId))
@@ -249,6 +271,14 @@ public sealed class DreamerService
         }
     }
 
+    /// <summary>
+    /// Builds a consolidated research context string composed from recent transcript sessions and inbox files based on the provided configuration.
+    /// </summary>
+    /// <param name="config">Controls which sources are included: when <c>InputTranscripts</c> is true, up to four most-recent transcript sessions are included; when <c>InputInbox</c> is true, inbox and RSS inbox markdown files are included.</param>
+    /// <param name="ct">Cancellation token that may abort the operation.</param>
+    /// <returns>
+    /// A single string made of labeled chunks joined by blank lines, or the literal "(no research context)" if no chunks were collected. Session chunks contain up to the last 24 messages formatted as "Role: Content". Inbox and RSS inbox chunks include file contents truncated to 4000 characters. Up to four transcript files and up to six files per inbox directory are considered.
+    /// </returns>
     private async Task<string> BuildResearchContextAsync(DreamerConfig config, CancellationToken ct)
     {
         var chunks = new List<string>();
@@ -359,6 +389,10 @@ public sealed class DreamerService
         return chunks.Count == 0 ? "(no research context)" : string.Join("\n\n", chunks);
     }
 
+    /// <summary>
+    /// Read the most recent markdown walk file and return its contents truncated to at most 3000 characters.
+    /// </summary>
+    /// <returns>`string` containing the file contents truncated to at most 3000 characters, or `null` if no walk file is found or it cannot be read.</returns>
     private string? ReadLatestWalkExcerpt()
     {
         if (!Directory.Exists(_room.WalksDir))

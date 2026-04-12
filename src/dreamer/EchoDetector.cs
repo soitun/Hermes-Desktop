@@ -10,13 +10,23 @@ public sealed class EchoDetector
     private readonly IChatClient _client;
     private readonly ILogger<EchoDetector> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="EchoDetector"/> using the provided chat client and logger.
+    /// </summary>
     public EchoDetector(IChatClient client, ILogger<EchoDetector> logger)
     {
         _client = client;
         _logger = logger;
     }
 
-    /// <summary>Returns 1–5; on failure returns 3 (neutral).</summary>
+    /// <summary>
+    /// Estimates how much the new walk repeats content from a prior excerpt and produces a repetition score.
+    /// </summary>
+    /// <param name="walkText">The new walk text to evaluate; will be truncated to at most 6000 characters.</param>
+    /// <param name="priorWalkExcerpt">An optional prior excerpt; if null or whitespace it is treated as "(none)" and otherwise truncated to at most 2000 characters.</param>
+    /// <returns>An integer score 1–5 where 1 = fresh/new and 5 = heavy repetition; returns 3 if scoring fails or no valid digit is found.</returns>
+    /// <exception cref="OperationCanceledException">The operation was canceled via the provided cancellation token.</exception>
+    /// <exception cref="TaskCanceledException">The operation was canceled via the provided cancellation token.</exception>
     public async Task<int> ScoreEchoAsync(string walkText, string? priorWalkExcerpt, CancellationToken ct)
     {
         try

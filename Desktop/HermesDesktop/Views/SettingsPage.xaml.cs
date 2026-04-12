@@ -45,6 +45,10 @@ public sealed partial class SettingsPage : Page
     // ═══════════════════════════════════════════
     //  Page Loaded — populate all sections
     // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Initializes the settings UI by loading all configuration sections and then refreshes the runtime status.
+    /// </summary>
     private async void OnPageLoaded(object sender, RoutedEventArgs e)
     {
         LoadUserProfile();
@@ -809,6 +813,9 @@ This file is a living document about the human I work with. It helps me provide 
         combo.SelectedIndex = fallbackIndex;
     }
 
+    /// <summary>
+    /// Enable or disable the authentication-related input fields to match the selected authentication mode.
+    /// </summary>
     private void UpdateAuthFieldState(string? authMode)
     {
         var mode = (authMode ?? "api_key").ToLowerInvariant();
@@ -842,6 +849,9 @@ This file is a living document about the human I work with. It helps me provide 
         return string.Join(",", validated);
     }
 
+    /// <summary>
+    /// Loads the Dreamer configuration from config.yaml and applies its values to the Dreamer UI controls.
+    /// </summary>
     private void LoadDreamerSettings()
     {
         var cfgPath = Path.Combine(HermesEnvironment.HermesHomePath, "config.yaml");
@@ -856,6 +866,9 @@ This file is a living document about the human I work with. It helps me provide 
         DreamerDiscordChannelBox.Text = c.DiscordChannelId;
     }
 
+    /// <summary>
+    /// Persists the Dreamer settings from the UI into the application's "dreamer" configuration section.
+    /// </summary>
     private async void SaveDreamerConfig_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -898,6 +911,9 @@ This file is a living document about the human I work with. It helps me provide 
         }
     }
 
+    /// <summary>
+    /// Ensures the dreamer directory exists and opens it in the system file explorer.
+    /// </summary>
     private void OpenDreamerRoom_Click(object sender, RoutedEventArgs e)
     {
         var dir = Path.Combine(HermesEnvironment.HermesHomePath, "dreamer");

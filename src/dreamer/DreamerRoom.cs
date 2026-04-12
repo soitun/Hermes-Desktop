@@ -20,6 +20,7 @@ public sealed class DreamerRoom
     public string InboxDir => Path.Combine(Root, "inbox");
     public string InboxRssDir => Path.Combine(Root, "inbox-rss");
     public string FeedbackDir => Path.Combine(Root, "feedback");
+    public string DigestsDir => Path.Combine(FeedbackDir, "digests");
     public string SoulPath => Path.Combine(Root, "DREAMER_SOUL.md");
     public string FascinationsPath => Path.Combine(Root, "fascinations.md");
     public string SignalLogPath => Path.Combine(Root, "signal-log.jsonl");
@@ -27,7 +28,7 @@ public sealed class DreamerRoom
 
     public void EnsureLayout()
     {
-        foreach (var d in new[] { Root, WalksDir, ProjectsDir, InboxDir, InboxRssDir, FeedbackDir })
+        foreach (var d in new[] { Root, WalksDir, ProjectsDir, InboxDir, InboxRssDir, FeedbackDir, DigestsDir })
         {
             try
             {
