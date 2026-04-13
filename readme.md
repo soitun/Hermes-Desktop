@@ -4,8 +4,6 @@
   <img src="docs/logo.png" alt="Hermes Desktop Logo" width="128" />
 </p>
 
-![Hermes Agent Banner](docs/screenshots/banner.png)
-
 A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
 **v2.3.0** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
