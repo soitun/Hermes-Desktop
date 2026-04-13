@@ -6,7 +6,7 @@
 
 A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
-**v2.3.0** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
+**v2.3.1** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
 ---
 
@@ -221,7 +221,8 @@ Hermes.CS/
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| **v2.3.0** | 2026-04-12 | Portable release (self-contained zip, no MSIX required), compiled memory stack, wiki tool, Dev launch profile, `publish-portable.ps1` |
+| **v2.3.1** | 2026-04-13 | Fix v2.3.0 source zip `DreamerStatusSnapshot.LastLocalDigestHint` compile error, fix portable startup `XamlParseException` on `ReplayPanel` (disable `PublishTrimmed`), add `ReplayPanel` constructor diagnostic capture, refresh readme screenshots |
+| v2.3.0 | 2026-04-12 | Portable release (self-contained zip, no MSIX required), compiled memory stack, wiki tool, Dev launch profile, `publish-portable.ps1` |
 | v2.2.1 | 2026-04-10 | Fix startup crash on fresh clone, safe file ops, one-click installer |
 | v2.2.0 | 2026-04-10 | User Profile section in Settings |
 | v2.1.0 | 2026-04-10 | Native C# gateway &mdash; Telegram and Discord without Python CLI |
