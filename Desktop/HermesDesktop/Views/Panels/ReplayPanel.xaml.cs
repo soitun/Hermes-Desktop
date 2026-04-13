@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Hermes.Agent.Core;
 using HermesDesktop.Models;
+using HermesDesktop.Services;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -28,11 +30,35 @@ public sealed partial class ReplayPanel : UserControl
     /// <summary>Raised when the user toggles recording on/off.</summary>
     public event Action<bool>? RecordingToggled;
 
+    // The ReplayPanel DataTemplate uses x:Bind against ActivityDisplayItem with
+    // x:DataType, so the IL trimmer must keep every public property of
+    // ActivityDisplayItem reachable from XAML. PublishTrimmed is disabled in
+    // HermesDesktop.csproj precisely because WinUI 3 compiled bindings are not
+    // trim-safe; this DynamicDependency on the ctor is belt-and-suspenders so
+    // re-enabling trimming later cannot silently strip the model and reproduce
+    // the "Cannot create instance of type ReplayPanel [Line: 0 Position: 0]"
+    // XamlParseException at startup.
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicConstructors, typeof(ActivityDisplayItem))]
     public ReplayPanel()
     {
-        InitializeComponent();
-        ActivityList.ItemsSource = Activities;
-        Activities.CollectionChanged += (_, _) => UpdateEmptyState();
+        try
+        {
+            InitializeComponent();
+            ActivityList.ItemsSource = Activities;
+            Activities.CollectionChanged += (_, _) => UpdateEmptyState();
+        }
+        catch (Exception ex)
+        {
+            // The WinUI XAML loader collapses any exception thrown from a UserControl
+            // constructor into an opaque XamlParseException ("Cannot create instance of
+            // type 'ReplayPanel' [Line: 0 Position: 0]") with no InnerException, because
+            // the failure crosses the WinRT ABI as a bare HRESULT. Capture the real
+            // exception to the startup log here, while we still have managed stack
+            // frames, so future crash reports include the actual root cause instead of
+            // the opaque wrapper.
+            StartupDiagnostics.LogControlConstructorFailure(nameof(ReplayPanel), ex);
+            throw;
+        }
     }
 
     /// <summary>
