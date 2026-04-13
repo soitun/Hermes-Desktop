@@ -79,9 +79,10 @@ Hermes Desktop is an **in-process agent runtime** with a native Windows UI &mdas
 
 | | |
 |---|---|
-| ![Dashboard](docs/screenshots/Screenshot%202026-04-05%20123632.png) | ![Chat](docs/screenshots/Screenshot%202026-04-05%20123637.png) |
-| ![Agent](docs/screenshots/Screenshot%202026-04-05%20123642.png) | ![Skills](docs/screenshots/Screenshot%202026-04-05%20123700.png) |
-| ![Memory](docs/screenshots/Screenshot%202026-04-05%20123706.png) | ![Integrations](docs/screenshots/Screenshot%202026-04-05%20123711.png) |
+| ![Chat](docs/screenshots/Screenshot%202026-04-12%20180315.png) | ![Agents](docs/screenshots/Screenshot%202026-04-12%20180348.png) |
+| ![Soul Editor](docs/screenshots/Screenshot%202026-04-12%20180428.png) | ![Soul Templates](docs/screenshots/Screenshot%202026-04-12%20180445.png) |
+| ![Skills](docs/screenshots/Screenshot%202026-04-12%20180517.png) | ![Memory](docs/screenshots/Screenshot%202026-04-12%20180529.png) |
+| ![Integrations](docs/screenshots/Screenshot%202026-04-12%20180602.png) | ![Settings](docs/screenshots/Screenshot%202026-04-12%20180629.png) |
 
 ### Agent Runtime
 
