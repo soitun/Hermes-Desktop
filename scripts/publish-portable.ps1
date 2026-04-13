@@ -8,6 +8,14 @@
 
   This sidesteps all MSIX signing/registration bugs while Microsoft ships fixes.
 
+  Steps:
+    1) Build gate — fast dotnet build to catch compile errors before the slower publish
+    2) dotnet publish  (self-contained, trimming OFF, ReadyToRun ON)
+    3) Bundle skills/ into publish output
+    4) Optionally compress to HermesDesktop-portable-{arch}.zip
+
+  The output zip is what gets uploaded to GitHub Releases.
+
 .PARAMETER Configuration
   Release (default) or Debug.
 
@@ -22,11 +30,11 @@
 
 .EXAMPLE
   .\scripts\publish-portable.ps1
-  # → Desktop\HermesDesktop\bin\publish-portable\HermesDesktop.exe
+  # -> Desktop\HermesDesktop\bin\publish-portable\HermesDesktop.exe
 
 .EXAMPLE
   .\scripts\publish-portable.ps1 -Zip
-  # → Desktop\HermesDesktop\bin\HermesDesktop-portable-x64.zip
+  # -> Desktop\HermesDesktop\bin\HermesDesktop-portable-x64.zip
 
 .EXAMPLE
   .\scripts\publish-portable.ps1 -Configuration Debug -Platform ARM64
@@ -54,6 +62,15 @@ if (-not $OutputDir) {
     $OutputDir = Join-Path $repoRoot "Desktop\HermesDesktop\bin\publish-portable"
 }
 
+# --- 1. Build gate: fast compile check before the slower publish step ---
+Write-Host ""
+Write-Host "=== Build gate (dotnet build -c $Configuration) ===" -ForegroundColor Cyan
+dotnet build $csproj -c $Configuration -p:Platform=$Platform
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build failed — fix the errors above before publishing."
+}
+
+# --- 2. Publish (self-contained, trimming OFF to avoid WinUI runtime crashes) ---
 if (Test-Path $OutputDir) {
     Write-Host "Cleaning previous publish: $OutputDir" -ForegroundColor Yellow
     Remove-Item -Recurse -Force $OutputDir
@@ -65,6 +82,7 @@ $publishArgs = @(
     "-r", $rid,
     "--self-contained", "true",
     "-p:Platform=$Platform",
+    "-p:PublishTrimmed=false",
     "-p:WindowsPackageType=None",
     "-p:WindowsAppSDKSelfContained=true",
     "-p:WindowsAppSdkDeploymentManagerInitialize=false",
@@ -87,7 +105,7 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# Copy skills/ into the publish folder so first-run bundling works
+# --- 3. Bundle skills/ into the publish folder so first-run bundling works ---
 $bundledSkills = Join-Path $repoRoot "skills"
 $targetSkills = Join-Path $OutputDir "skills"
 if (Test-Path $bundledSkills) {
@@ -97,7 +115,7 @@ if (Test-Path $bundledSkills) {
 
 $exe = Join-Path $OutputDir "HermesDesktop.exe"
 if (-not (Test-Path $exe)) {
-    Write-Host "Warning: HermesDesktop.exe not found in output. Check build output." -ForegroundColor Yellow
+    Write-Error "Publish output missing HermesDesktop.exe under $OutputDir"
 }
 
 Write-Host ""
@@ -106,6 +124,7 @@ Write-Host "  Folder: $OutputDir" -ForegroundColor White
 Write-Host "  Exe:    $exe" -ForegroundColor White
 Write-Host ""
 
+# --- 4. Zip (optional) ---
 if ($Zip) {
     $zipName = "HermesDesktop-portable-$($Platform.ToLower()).zip"
     $zipPath = Join-Path (Split-Path $OutputDir) $zipName
