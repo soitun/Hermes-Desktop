@@ -79,12 +79,16 @@ internal static class Program
         }
 
         var windowDetected = await WaitForMainWindowAsync(process, options.StartupTimeout);
-        int? exitCode = process.HasExited ? process.ExitCode : null;
+
+        // Capture process exit state before any termination attempt so diagnostics
+        // report the original launch outcome instead of post-kill state.
+        bool hasExited = process.HasExited;
+        int? exitCode = hasExited ? process.ExitCode : null;
 
         if (!windowDetected)
         {
             await TerminateProcessAsync(process);
-            var missingWindowDetails = process.HasExited
+            var missingWindowDetails = hasExited
                 ? $"Process exited before creating a main window. Exit code: {exitCode?.ToString() ?? "unknown"}."
                 : $"Timed out waiting {options.StartupTimeout.TotalSeconds:0}s for a main window.";
 
@@ -99,7 +103,31 @@ internal static class Program
             return ProbeResult.Failed(detail);
         }
 
-        await Task.Delay(options.SettleDelay);
+        var settleDeadline = DateTime.UtcNow + options.SettleDelay;
+        bool exitedDuringSettle = false;
+        while (DateTime.UtcNow < settleDeadline)
+        {
+            if (process.HasExited)
+            {
+                exitedDuringSettle = true;
+                break;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(250));
+        }
+
+        if (exitedDuringSettle)
+        {
+            var startupLogDelta = StartupLogSnapshot.ReadDelta(options.StartupLogPath, startupLogSnapshot);
+            var detail = BuildFailureDetail(
+                startedAt,
+                process.Id,
+                $"Process exited unexpectedly during settle period. Exit code: {process.ExitCode}.",
+                startupLogDelta,
+                fatalPatternHits: Array.Empty<string>());
+            return ProbeResult.Failed(detail);
+        }
+
         await TerminateProcessAsync(process);
 
         var appendedStartupLog = StartupLogSnapshot.ReadDelta(options.StartupLogPath, startupLogSnapshot);
@@ -248,12 +276,13 @@ internal sealed class ProbeOptions
     internal static string Usage =>
         """
         Usage:
-          Hermes.SmokeProbe --exe <path> --startup-log <path> --report-path <path> [options]
+          Hermes.SmokeProbe --exe <path> --startup-log <path> [options]
 
         Options:
-          --startup-timeout-seconds <n>   Defaults to 90
-          --settle-seconds <n>            Defaults to 8
-          --fatal-pattern <text>          Repeat to add more fatal markers
+          --report-path <path>                Optional report output file
+          --startup-timeout-seconds <n>       Defaults to 90
+          --settle-seconds <n>                Defaults to 8
+          --fatal-pattern <text>              Repeat to add more fatal markers
         """;
 
     internal string ExePath { get; }
@@ -296,7 +325,7 @@ internal sealed class ProbeOptions
 
         string exePath = RequiredSingle(map, "--exe");
         string startupLogPath = RequiredSingle(map, "--startup-log");
-        string reportPath = RequiredSingle(map, "--report-path");
+        string reportPath = OptionalSingle(map, "--report-path");
 
         var startupTimeoutSeconds = ParseInt(map, "--startup-timeout-seconds", 90);
         var settleSeconds = ParseInt(map, "--settle-seconds", 8);
@@ -323,7 +352,7 @@ internal sealed class ProbeOptions
         return new ProbeOptions(
             Path.GetFullPath(exePath),
             Path.GetFullPath(startupLogPath),
-            Path.GetFullPath(reportPath),
+            string.IsNullOrWhiteSpace(reportPath) ? string.Empty : Path.GetFullPath(reportPath),
             TimeSpan.FromSeconds(startupTimeoutSeconds),
             TimeSpan.FromSeconds(settleSeconds),
             fatalPatterns);
@@ -334,6 +363,16 @@ internal sealed class ProbeOptions
         if (!map.TryGetValue(key, out var values) || values.Count == 0 || string.IsNullOrWhiteSpace(values[0]))
         {
             throw new ArgumentException($"Missing required argument '{key}'.");
+        }
+
+        return values[0];
+    }
+
+    private static string OptionalSingle(Dictionary<string, List<string>> map, string key)
+    {
+        if (!map.TryGetValue(key, out var values) || values.Count == 0)
+        {
+            return string.Empty;
         }
 
         return values[0];
