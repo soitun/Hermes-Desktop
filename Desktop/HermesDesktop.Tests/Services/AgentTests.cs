@@ -1164,6 +1164,15 @@ public class AgentActivityLogTests
             "ActivityLog should contain a Denied entry for the user-denied tool call.");
     }
 
+    private static Mock<ITool> CreateMockTool(string name)
+    {
+        var mock = new Mock<ITool>();
+        mock.Setup(t => t.Name).Returns(name);
+        mock.Setup(t => t.Description).Returns($"Description of {name}");
+        mock.Setup(t => t.ParametersType).Returns(typeof(EmptyToolParams));
+        return mock;
+    }
+
     private sealed class EmptyToolParams { }
 }
 
