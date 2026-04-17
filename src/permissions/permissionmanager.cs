@@ -73,6 +73,23 @@ public sealed class PermissionManager
             return RuleExists(_context.AlwaysAllow, normalizedToolName, normalizedPattern);
         }
     }
+
+    /// <summary>
+    /// Returns a cloned snapshot of always-allow rules suitable for persistence.
+    /// </summary>
+    public IReadOnlyList<PermissionRule> GetAlwaysAllowRulesSnapshot()
+    {
+        lock (_rulesLock)
+        {
+            return _context.AlwaysAllow
+                .Select(rule => new PermissionRule
+                {
+                    ToolName = rule.ToolName,
+                    Pattern = rule.Pattern
+                })
+                .ToArray();
+        }
+    }
     
     /// <summary>
     /// Check permissions for a tool call.

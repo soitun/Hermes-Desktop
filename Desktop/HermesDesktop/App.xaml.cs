@@ -365,10 +365,26 @@ public partial class App : Application
             skillsDir,
             sp.GetRequiredService<ILogger<SkillManager>>()));
 
-        // Permission manager
-        services.AddSingleton(sp => new PermissionManager(
-            new PermissionContext(),
-            sp.GetRequiredService<ILogger<PermissionManager>>()));
+        // Permission manager + workspace-scoped permission memory
+        var permissionMemoryDir = Path.Combine(projectDir, "permissions");
+        var workspacePath = HermesEnvironment.AgentWorkingDirectory;
+        services.AddSingleton(sp => new WorkspacePermissionRuleStore(
+            permissionMemoryDir,
+            workspacePath,
+            sp.GetRequiredService<ILogger<WorkspacePermissionRuleStore>>()));
+        services.AddSingleton(sp =>
+        {
+            var store = sp.GetRequiredService<WorkspacePermissionRuleStore>();
+            var context = new PermissionContext();
+            foreach (var rule in store.LoadAlwaysAllowRules())
+            {
+                context.AlwaysAllow.Add(rule);
+            }
+
+            return new PermissionManager(
+                context,
+                sp.GetRequiredService<ILogger<PermissionManager>>());
+        });
 
         // Task manager
         var tasksDir = Path.Combine(projectDir, "tasks");
@@ -622,6 +638,7 @@ public partial class App : Application
     {
         var agent = services.GetRequiredService<Hermes.Agent.Core.Agent>();
         var permissionManager = services.GetRequiredService<PermissionManager>();
+        var permissionStore = services.GetRequiredService<WorkspacePermissionRuleStore>();
         // Resolve the dialog service once; it captures the active window's
         // DispatcherQueue and XamlRoot internally and is safe to reuse across
         // many permission prompts. PermissionDialogService is the dedicated
@@ -640,9 +657,12 @@ public partial class App : Application
                 switch (decision)
                 {
                     case PermissionPromptDecision.AlwaysAllowTool:
-                        // Persist in-memory for the app lifetime so repeated tool calls
-                        // no longer prompt during this run.
-                        permissionManager.AddAlwaysAllowRule(toolName);
+                        // Persist for this workspace so repeated tool calls no
+                        // longer prompt on future runs.
+                        if (permissionManager.AddAlwaysAllowRule(toolName))
+                        {
+                            permissionStore.SaveAlwaysAllowRules(permissionManager.GetAlwaysAllowRulesSnapshot());
+                        }
                         return true;
 
                     case PermissionPromptDecision.AllowOnce:
