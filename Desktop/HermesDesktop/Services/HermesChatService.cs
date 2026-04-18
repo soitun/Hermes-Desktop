@@ -232,6 +232,8 @@ internal sealed class HermesChatService : IDisposable
         _permissionRuleStore.ClearAlwaysAllowRules();
     }
 
+    public void ClearRememberedWorkspacePermissions() => ClearRememberedPermissionsForWorkspace();
+
     // ── Tool Registration ──
 
     public void RegisterTool(ITool tool) => _agent.RegisterTool(tool);
