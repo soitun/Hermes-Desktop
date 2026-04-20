@@ -736,6 +736,18 @@ internal static class HermesEnvironment
     /// <summary>Read a value from the integrations section of config.yaml.</summary>
     internal static string? ReadIntegrationSetting(string key) => ReadConfigSetting("integrations", key);
 
+    /// <summary>Max tool-call iterations per agent turn. Default 90 matches the SettingsPage UI default.</summary>
+    internal static int MaxAgentIterations
+    {
+        get
+        {
+            var raw = ReadConfigSetting("agent", "max_turns");
+            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0
+                ? v
+                : 90;
+        }
+    }
+
     /// <summary>Read a value from any top-level section of config.yaml (section.key).</summary>
     internal static string? ReadConfigSetting(string section, string key)
     {

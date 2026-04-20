@@ -478,16 +478,23 @@ public partial class App : Application
         // Dreamer (background free-association worker) — status for Dashboard; loop started post-build
         services.AddSingleton(_ => new DreamerStatus());
 
-        // Core agent — wired with all optional dependencies
-        services.AddSingleton(sp => new Agent(
-            sp.GetRequiredService<IChatClient>(),
-            sp.GetRequiredService<ILogger<Agent>>(),
-            permissions: sp.GetRequiredService<PermissionManager>(),
-            transcripts: sp.GetRequiredService<TranscriptStore>(),
-            memories: sp.GetRequiredService<MemoryManager>(),
-            contextManager: sp.GetRequiredService<ContextManager>(),
-            soulService: sp.GetRequiredService<SoulService>(),
-            pluginManager: sp.GetRequiredService<PluginManager>()));
+        // Core agent — wired with all optional dependencies. MaxToolIterations
+        // is read from config.yaml (agent.max_turns) so the SettingsPage value
+        // actually takes effect; otherwise the default would be 25.
+        services.AddSingleton(sp =>
+        {
+            var agent = new Agent(
+                sp.GetRequiredService<IChatClient>(),
+                sp.GetRequiredService<ILogger<Agent>>(),
+                permissions: sp.GetRequiredService<PermissionManager>(),
+                transcripts: sp.GetRequiredService<TranscriptStore>(),
+                memories: sp.GetRequiredService<MemoryManager>(),
+                contextManager: sp.GetRequiredService<ContextManager>(),
+                soulService: sp.GetRequiredService<SoulService>(),
+                pluginManager: sp.GetRequiredService<PluginManager>());
+            agent.MaxToolIterations = HermesEnvironment.MaxAgentIterations;
+            return agent;
+        });
 
         // Agent service (subagent spawning, worktree isolation)
         var worktreesDir = Path.Combine(projectDir, "worktrees");
