@@ -713,9 +713,10 @@ public partial class App : Application
         // Agent tool (subagent spawning — needs chat client and tool registry)
         RegisterAndTrack(agent, toolRegistry, new AgentTool(chatClient, toolRegistry));
 
-        // Memory tool
-        var memoryToolDir = Path.Combine(HermesEnvironment.HermesHomePath, "memories");
-        RegisterAndTrack(agent, toolRegistry, new MemoryTool(memoryToolDir));
+        // Memory tool — share the directory with MemoryManager so save/list/delete
+        // and the auto-recall plugin operate on the same store.
+        var memoryManager = services.GetRequiredService<MemoryManager>();
+        RegisterAndTrack(agent, toolRegistry, new MemoryTool(memoryManager.MemoryDir));
 
         // Session search tool
         var transcriptDir = Path.Combine(
