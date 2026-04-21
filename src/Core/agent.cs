@@ -574,8 +574,55 @@ public sealed class Agent : IAgent
         // where every streaming turn left another stale snapshot at index 0.
         int transientSystemMessages = 0;
 
+        // Streamed text accumulator. Fed into OnTurnEndAsync so plugins observing
+        // assistant output (e.g. learning plugins, transcript indexers) see the
+        // SAME final text the user saw — even when streaming is interrupted by
+        // cancellation, errors, or the max-iteration fallback. Built up by
+        // intercepting every TokenDelta yielded downstream.
+        var streamedResponse = new System.Text.StringBuilder();
+
+        // ── Plugin turn start ──
+        // StreamChatAsync historically skipped the plugin lifecycle entirely,
+        // so plugins observed only non-streaming turns and silently desynced
+        // when the UI used streaming. Mirror ChatAsync semantics: fire start
+        // here, and rely on the bottom finally to fire end on every exit path.
+        if (_pluginManager is not null)
+        {
+            try { await _pluginManager.OnTurnStartAsync(session.Messages.Count, message, ct); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Plugin OnTurnStart failed (stream)"); }
+        }
+
+        // ── Plugin system prompt blocks ──
+        // Same source of truth as ChatAsync. Without these, the streaming path
+        // ignores the BuiltinMemoryPlugin and any registered context plugins,
+        // producing visibly different model behavior between streaming and
+        // non-streaming flows.
+        if (_pluginManager is not null)
+        {
+            try
+            {
+                var pluginBlocks = await _pluginManager.GetSystemPromptBlocksAsync(ct);
+                if (!string.IsNullOrWhiteSpace(pluginBlocks))
+                {
+                    session.Messages.Insert(0, new Message
+                    {
+                        Role = "system",
+                        Content = pluginBlocks
+                    });
+                    transientSystemMessages++;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Plugin system prompt blocks failed (stream)");
+            }
+        }
+
         // ── Memory injection ──
-        if (_memories is not null)
+        // Only run the legacy direct-memory path when the plugin manager is
+        // ABSENT — otherwise BuiltinMemoryPlugin already injected the same
+        // content via GetSystemPromptBlocksAsync above and we'd double-stamp.
+        if (_pluginManager is null && _memories is not null)
         {
             try
             {
@@ -654,18 +701,17 @@ public sealed class Agent : IAgent
         {
             // No tools registered — stream the response directly
             var messagesToSend = preparedContext ?? session.Messages;
-            var fullResponse = new System.Text.StringBuilder();
 
             await foreach (var evt in _chatClient.StreamAsync(null, messagesToSend, null, ct))
             {
                 if (evt is StreamEvent.TokenDelta td)
-                    fullResponse.Append(td.Text);
+                    streamedResponse.Append(td.Text);
 
                 yield return evt;
             }
 
             // Save accumulated response — always save, even if empty, to match ChatAsync behavior
-            var assistantMsg = new Message { Role = "assistant", Content = fullResponse.ToString() };
+            var assistantMsg = new Message { Role = "assistant", Content = streamedResponse.ToString() };
             session.AddMessage(assistantMsg);
             if (_transcripts is not null)
                 await _transcripts.SaveMessageAsync(session.Id, assistantMsg, ct);
@@ -693,7 +739,10 @@ public sealed class Agent : IAgent
                 // LLM is done — stream the final text as a single token delta
                 var finalContent = response.Content ?? "";
                 if (!string.IsNullOrEmpty(finalContent))
+                {
+                    streamedResponse.Append(finalContent);
                     yield return new StreamEvent.TokenDelta(finalContent);
+                }
 
                 var finalMsg = new Message { Role = "assistant", Content = finalContent };
                 session.AddMessage(finalMsg);
@@ -888,6 +937,7 @@ public sealed class Agent : IAgent
         // Hit max iterations
         _logger.LogWarning("Hit max tool iterations ({Max}) for session {SessionId}", MaxToolIterations, session.Id);
         var fallback = "I've reached the maximum number of tool call iterations. Here's what I've accomplished so far based on the conversation above.";
+        streamedResponse.Append(fallback);
         yield return new StreamEvent.TokenDelta(fallback);
         var fallbackMsg = new Message { Role = "assistant", Content = fallback };
         session.AddMessage(fallbackMsg);
@@ -906,6 +956,28 @@ public sealed class Agent : IAgent
                     session.Messages.RemoveAt(0);
                 else
                     break;
+            }
+
+            // ── Plugin turn end fires on EVERY exit path ──
+            // streamedResponse holds whatever text actually reached the consumer
+            // before exit. On consumer-cancellation or mid-stream error it will
+            // be a partial response; that's the right value for plugins observing
+            // user-visible output (don't pretend the assistant said more than it
+            // did). On normal completion it equals the saved assistant message.
+            if (_pluginManager is not null)
+            {
+                try
+                {
+                    await _pluginManager.OnTurnEndAsync(
+                        message,
+                        streamedResponse.ToString(),
+                        session.Id,
+                        ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Plugin OnTurnEnd failed (stream)");
+                }
             }
         }
     }

@@ -944,12 +944,12 @@
                 <Expander.Header>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
-                        <TextBlock Text="Web Search" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center"/>
+                        <TextBlock x:Uid="SettingsExpWebSearchHeader" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Expander.Header>
                 <Expander.Content>
                     <StackPanel Spacing="12" Padding="4,8,4,4">
-                        <TextBlock Text="Provider used by the websearch tool. DuckDuckGo requires no API key. Google requires an API key AND a Custom Search Engine ID. Bing requires an API key."
+                        <TextBlock x:Uid="SettingsWebSearchDescription"
                                    TextWrapping="Wrap"
                                    Foreground="{StaticResource AppTextSecondaryBrush}"
                                    FontSize="12"/>
@@ -966,7 +966,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Text="Provider" VerticalAlignment="Center"
+                            <TextBlock x:Uid="SettingsLblWebSearchProvider" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
                             <ComboBox x:Name="WebSearchProviderCombo" Grid.Column="1"
                                       HorizontalAlignment="Stretch"
@@ -979,33 +979,33 @@
                                 <ComboBoxItem Content="bing" Tag="bing"/>
                             </ComboBox>
 
-                            <TextBlock Grid.Row="1" Text="Google API key" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="1" x:Uid="SettingsLblWebSearchGoogleApiKey" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
                             <PasswordBox x:Name="WebSearchGoogleApiKeyBox" Grid.Row="1" Grid.Column="1"
+                                         x:Uid="SettingsWebSearchGoogleApiKeyBox"
                                          Background="{StaticResource AppInsetBrush}"
                                          BorderBrush="{StaticResource AppStrokeBrush}"
-                                         Foreground="White"
-                                         PlaceholderText="AIza..."/>
+                                         Foreground="White"/>
 
-                            <TextBlock Grid.Row="2" Text="Google Search Engine ID" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="2" x:Uid="SettingsLblWebSearchGoogleCseId" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
                             <TextBox x:Name="WebSearchGoogleCseIdBox" Grid.Row="2" Grid.Column="1"
+                                     x:Uid="SettingsWebSearchGoogleCseIdBox"
                                      Background="{StaticResource AppInsetBrush}"
                                      BorderBrush="{StaticResource AppStrokeBrush}"
-                                     Foreground="White"
-                                     PlaceholderText="cx=..."/>
+                                     Foreground="White"/>
 
-                            <TextBlock Grid.Row="3" Text="Bing API key" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="3" x:Uid="SettingsLblWebSearchBingApiKey" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
                             <PasswordBox x:Name="WebSearchBingApiKeyBox" Grid.Row="3" Grid.Column="1"
+                                         x:Uid="SettingsWebSearchBingApiKeyBox"
                                          Background="{StaticResource AppInsetBrush}"
                                          BorderBrush="{StaticResource AppStrokeBrush}"
-                                         Foreground="White"
-                                         PlaceholderText="Bing v7 subscription key"/>
+                                         Foreground="White"/>
                         </Grid>
 
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Button Content="Save web search" Click="SaveWebSearchConfig_Click"
+                            <Button x:Uid="SettingsSaveWebSearchBtn" Click="SaveWebSearchConfig_Click"
                                     Background="{StaticResource AppAccentGradientBrush}"
                                     BorderBrush="{StaticResource AppAccentDarkBrush}"
                                     Foreground="#16110D" Padding="20,8"/>

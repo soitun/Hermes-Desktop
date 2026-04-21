@@ -1236,6 +1236,36 @@
   <data name="SettingsSavePluginBtn.Content" xml:space="preserve">
     <value>保存插件配置</value>
   </data>
+  <data name="SettingsExpWebSearchHeader.Text" xml:space="preserve">
+    <value>网页搜索</value>
+  </data>
+  <data name="SettingsWebSearchDescription.Text" xml:space="preserve">
+    <value>websearch 工具使用的提供方。DuckDuckGo 无需 API 密钥；Google 需要 API 密钥和自定义搜索引擎 ID；Bing 需要 API 密钥。</value>
+  </data>
+  <data name="SettingsLblWebSearchProvider.Text" xml:space="preserve">
+    <value>提供方</value>
+  </data>
+  <data name="SettingsLblWebSearchGoogleApiKey.Text" xml:space="preserve">
+    <value>Google API 密钥</value>
+  </data>
+  <data name="SettingsWebSearchGoogleApiKeyBox.PlaceholderText" xml:space="preserve">
+    <value>AIza...</value>
+  </data>
+  <data name="SettingsLblWebSearchGoogleCseId.Text" xml:space="preserve">
+    <value>Google 搜索引擎 ID</value>
+  </data>
+  <data name="SettingsWebSearchGoogleCseIdBox.PlaceholderText" xml:space="preserve">
+    <value>cx=...</value>
+  </data>
+  <data name="SettingsLblWebSearchBingApiKey.Text" xml:space="preserve">
+    <value>Bing API 密钥</value>
+  </data>
+  <data name="SettingsWebSearchBingApiKeyBox.PlaceholderText" xml:space="preserve">
+    <value>Bing v7 订阅密钥</value>
+  </data>
+  <data name="SettingsSaveWebSearchBtn.Content" xml:space="preserve">
+    <value>保存网页搜索</value>
+  </data>
   <data name="SettingsExpPathsSystemHeader.Text" xml:space="preserve">
     <value>路径与系统</value>
   </data>

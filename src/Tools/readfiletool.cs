@@ -15,7 +15,10 @@ public sealed class ReadFileTool : ITool
     public Task<ToolResult> ExecuteAsync(object parameters, CancellationToken ct)
     {
         var p = (ReadFileParameters)parameters;
-        return ReadFileAsync(ResolvePath(p.FilePath), p.Offset, p.Limit, ct);
+        var resolved = ResolvePath(p.FilePath, out var rejection);
+        if (rejection is not null)
+            return Task.FromResult(ToolResult.Fail(rejection));
+        return ReadFileAsync(resolved, p.Offset, p.Limit, ct);
     }
 
     /// <summary>
@@ -26,21 +29,75 @@ public sealed class ReadFileTool : ITool
     /// which on Windows installers is typically <c>C:\Windows\System32</c>).
     /// Falls back to <see cref="Directory.GetCurrentDirectory"/> when the env
     /// var is unset, preserving prior behavior for users who haven't opted in.
+    ///
+    /// Strict mode: when <c>HERMES_DESKTOP_WORKSPACE_STRICT=1</c> AND a workspace
+    /// is configured, the resolved path MUST live inside the workspace tree.
+    /// This blocks both absolute escapes (<c>C:\Windows\System32\...</c>) and
+    /// relative-traversal escapes (<c>../../etc/passwd</c>). Disabled by default
+    /// because the agent legitimately reads system files (config samples, bundled
+    /// assets) — opting in is a deliberate security posture for shared/managed
+    /// installs and CI runners.
     /// </summary>
-    private static string ResolvePath(string filePath)
+    /// <param name="filePath">Path supplied by the tool caller.</param>
+    /// <param name="rejection">When non-null, the call MUST be rejected with this
+    /// human-readable reason. Returned via out-param rather than thrown so the
+    /// tool can surface the policy violation as a normal failed result.</param>
+    private static string ResolvePath(string filePath, out string? rejection)
     {
+        rejection = null;
         if (string.IsNullOrWhiteSpace(filePath)) return filePath;
-        if (Path.IsPathRooted(filePath)) return filePath;
 
         var workspace = Environment.GetEnvironmentVariable("HERMES_DESKTOP_WORKSPACE");
-        var baseDir = !string.IsNullOrWhiteSpace(workspace) && Directory.Exists(workspace)
-            ? workspace
-            : Directory.GetCurrentDirectory();
+        var hasWorkspace = !string.IsNullOrWhiteSpace(workspace) && Directory.Exists(workspace);
+        var baseDir = hasWorkspace ? workspace! : Directory.GetCurrentDirectory();
 
-        // Path.GetFullPath resolves ".." segments and normalizes separators —
-        // we deliberately do NOT clamp inside the workspace because tools
-        // legitimately read system files (config samples, bundled assets).
-        return Path.GetFullPath(Path.Combine(baseDir, filePath));
+        // Path.GetFullPath resolves ".." segments and normalizes separators.
+        var resolved = Path.IsPathRooted(filePath)
+            ? Path.GetFullPath(filePath)
+            : Path.GetFullPath(Path.Combine(baseDir, filePath));
+
+        if (hasWorkspace && IsStrictModeEnabled() && !IsInsideWorkspace(resolved, workspace!))
+        {
+            rejection = $"Path '{filePath}' resolves outside HERMES_DESKTOP_WORKSPACE; " +
+                        "strict mode is enabled (HERMES_DESKTOP_WORKSPACE_STRICT=1).";
+        }
+
+        return resolved;
+    }
+
+    private static bool IsStrictModeEnabled()
+    {
+        // Accept "1" as the canonical opt-in. Anything else (including unset,
+        // "0", "true", "false") leaves strict mode OFF — we deliberately do
+        // NOT accept "true" because precedent across our tooling treats
+        // numeric flags as the unambiguous machine-friendly form, and we'd
+        // rather reject ambiguous configs at the env-var layer than guess.
+        var raw = Environment.GetEnvironmentVariable("HERMES_DESKTOP_WORKSPACE_STRICT");
+        return string.Equals(raw, "1", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// True when <paramref name="candidate"/> is inside or equal to the
+    /// <paramref name="workspace"/> directory after full normalization.
+    /// Uses a trailing-separator boundary check so a workspace
+    /// <c>C:\work\proj</c> does not erroneously contain <c>C:\work\proj-evil</c>.
+    /// </summary>
+    private static bool IsInsideWorkspace(string candidate, string workspace)
+    {
+        var normWorkspace = Path.GetFullPath(workspace).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var normCandidate = Path.GetFullPath(candidate);
+
+        // Use case-insensitive compare on Windows (the only platform this app
+        // ships to), case-sensitive elsewhere — matches NTFS semantics.
+        var cmp = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (string.Equals(normCandidate, normWorkspace, cmp))
+            return true;
+
+        var prefix = normWorkspace + Path.DirectorySeparatorChar;
+        return normCandidate.StartsWith(prefix, cmp);
     }
 
     private Task<ToolResult> ReadFileAsync(string filePath, int? offset, int? limit, CancellationToken ct)
