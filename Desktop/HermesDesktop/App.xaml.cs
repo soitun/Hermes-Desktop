@@ -496,14 +496,16 @@ public partial class App : Application
             return agent;
         });
 
-        // Agent service (subagent spawning, worktree isolation)
+        // Agent service (subagent spawning, worktree isolation). Pass the
+        // configured iteration limit so subagents honor agent.max_turns too.
         var worktreesDir = Path.Combine(projectDir, "worktrees");
         services.AddSingleton(sp => new AgentService(
             sp,
             sp.GetRequiredService<ILogger<AgentService>>(),
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<IChatClient>(),
-            worktreesDir));
+            worktreesDir,
+            defaultMaxToolIterations: HermesEnvironment.MaxAgentIterations));
 
         // Coordinator service (multi-worker orchestration)
         var coordinatorStateDir = Path.Combine(projectDir, "coordinator");
