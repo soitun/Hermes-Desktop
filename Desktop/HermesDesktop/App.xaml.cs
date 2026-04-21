@@ -698,10 +698,12 @@ public partial class App : Application
         RegisterAndTrack(agent, toolRegistry, new BashTool());
         RegisterAndTrack(agent, toolRegistry, new TerminalTool());
 
-        // Web tools
+        // Web tools — pull provider + API keys from HermesEnvironment so the user's
+        // configured search provider in config.yaml is honored. Hardcoding "duckduckgo"
+        // here was the v2.4.0 regression that silently ignored Google/Bing config.
         RegisterAndTrack(agent, toolRegistry, new WebFetchTool(httpClient));
         RegisterAndTrack(agent, toolRegistry, new WebSearchTool(
-            new WebSearchConfig { Provider = "duckduckgo" }, httpClient));
+            HermesEnvironment.BuildWebSearchConfig(), httpClient));
 
         // Task management
         RegisterAndTrack(agent, toolRegistry, new TodoWriteTool());
@@ -713,8 +715,11 @@ public partial class App : Application
         // Agent tool (subagent spawning — needs chat client and tool registry)
         RegisterAndTrack(agent, toolRegistry, new AgentTool(chatClient, toolRegistry));
 
-        // Memory tool
-        var memoryToolDir = Path.Combine(HermesEnvironment.HermesHomePath, "memories");
+        // Memory tool — share the SAME directory the MemoryManager uses
+        // (~/.hermes/hermes-cs/memory). The previous path
+        // (~/.hermes/memories) wrote to a directory the MemoryManager never
+        // scans, so memories saved via the tool were invisible to the loader.
+        var memoryToolDir = Path.Combine(HermesEnvironment.HermesHomePath, "hermes-cs", "memory");
         RegisterAndTrack(agent, toolRegistry, new MemoryTool(memoryToolDir));
 
         // Session search tool

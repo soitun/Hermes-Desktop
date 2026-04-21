@@ -60,6 +60,7 @@ public sealed partial class SettingsPage : Page
         LoadDisplaySettings();
         LoadExecutionSettings();
         LoadPluginSettings();
+        LoadWebSearchSettings();
         LoadDreamerSettings();
         await RefreshRuntimeStatusAsync();
     }
@@ -777,6 +778,107 @@ This file is a living document about the human I work with. It helps me provide 
         {
             PluginSaveStatus.Text = string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetString("SettingsErrorFormat"), ex.Message);
             PluginSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+        }
+    }
+
+    // ── Web Search ──
+    //
+    // Provider selection is decoupled from credentials so users can pre-fill
+    // Google/Bing keys and switch providers without losing them. We do NOT
+    // round-trip the actual key value through the PasswordBox after save —
+    // PasswordBox cleared on every reload means a freshly opened settings
+    // page never shows the saved secret in the UI, but writing an empty
+    // PasswordBox would wipe the saved key. We therefore only persist the
+    // key field when the box is non-empty (treat empty as "leave unchanged").
+
+    private void LoadWebSearchSettings()
+    {
+        var provider = (HermesEnvironment.ReadConfigSetting("web_search", "provider") ?? "duckduckgo")
+            .Trim()
+            .ToLowerInvariant();
+        SelectComboByTag(WebSearchProviderCombo, provider);
+
+        // Show CSE ID (not a secret); leave PasswordBoxes blank so we never
+        // surface the cached secret to a casual onlooker. Save logic respects
+        // empty-box-means-unchanged.
+        WebSearchGoogleCseIdBox.Text = HermesEnvironment.ReadConfigSetting("web_search", "google_search_engine_id") ?? "";
+        WebSearchGoogleApiKeyBox.Password = "";
+        WebSearchBingApiKeyBox.Password = "";
+
+        UpdateWebSearchFieldVisibility(provider);
+    }
+
+    private void WebSearchProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (WebSearchProviderCombo.SelectedItem is ComboBoxItem item &&
+            item.Tag is string tag)
+        {
+            UpdateWebSearchFieldVisibility(tag);
+        }
+    }
+
+    private void UpdateWebSearchFieldVisibility(string provider)
+    {
+        // Non-applicable fields stay enabled (so users can paste keys ahead of
+        // time) but we visually de-emphasize via Opacity. Hard-disabling caused
+        // confusion in user testing — they could not figure out why a field was
+        // greyed out and assumed the app was broken.
+        bool google = string.Equals(provider, "google", StringComparison.OrdinalIgnoreCase);
+        bool bing = string.Equals(provider, "bing", StringComparison.OrdinalIgnoreCase);
+
+        WebSearchGoogleApiKeyBox.Opacity = google ? 1.0 : 0.55;
+        WebSearchGoogleCseIdBox.Opacity = google ? 1.0 : 0.55;
+        WebSearchBingApiKeyBox.Opacity = bing ? 1.0 : 0.55;
+    }
+
+    private async void SaveWebSearchConfig_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var providerTag = (WebSearchProviderCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "duckduckgo";
+
+            var settings = new Dictionary<string, string>
+            {
+                ["provider"] = providerTag,
+                ["google_search_engine_id"] = WebSearchGoogleCseIdBox.Text.Trim(),
+            };
+
+            // Empty PasswordBox = "leave existing value alone" so the UI never
+            // overwrites a stored secret with a blank.
+            var googleKey = WebSearchGoogleApiKeyBox.Password;
+            if (!string.IsNullOrWhiteSpace(googleKey))
+                settings["google_api_key"] = googleKey;
+            else
+            {
+                var existing = HermesEnvironment.ReadConfigSetting("web_search", "google_api_key");
+                if (!string.IsNullOrWhiteSpace(existing))
+                    settings["google_api_key"] = existing;
+            }
+
+            var bingKey = WebSearchBingApiKeyBox.Password;
+            if (!string.IsNullOrWhiteSpace(bingKey))
+                settings["bing_api_key"] = bingKey;
+            else
+            {
+                var existing = HermesEnvironment.ReadConfigSetting("web_search", "bing_api_key");
+                if (!string.IsNullOrWhiteSpace(existing))
+                    settings["bing_api_key"] = existing;
+            }
+
+            await HermesEnvironment.SaveConfigSectionAsync("web_search", settings);
+
+            // Wipe the in-memory PasswordBox values now that they're persisted —
+            // limits attack surface if the page stays open and unattended.
+            WebSearchGoogleApiKeyBox.Password = "";
+            WebSearchBingApiKeyBox.Password = "";
+
+            WebSearchSaveStatus.Text = ResourceLoader.GetString("SettingsSaveSuccessRestart");
+            WebSearchSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOnlineBrush"];
+        }
+        catch (Exception ex)
+        {
+            WebSearchSaveStatus.Text = string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetString("SettingsErrorFormat"), ex.Message);
+            WebSearchSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
         }
     }
 

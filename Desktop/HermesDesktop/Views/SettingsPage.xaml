@@ -939,6 +939,83 @@
                 </Expander.Content>
             </Expander>
 
+            <!-- ═══ H2. Web Search ═══ -->
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
+                        <TextBlock Text="Web Search" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Expander.Header>
+                <Expander.Content>
+                    <StackPanel Spacing="12" Padding="4,8,4,4">
+                        <TextBlock Text="Provider used by the websearch tool. DuckDuckGo requires no API key. Google requires an API key AND a Custom Search Engine ID. Bing requires an API key."
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                                   FontSize="12"/>
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Provider" VerticalAlignment="Center"
+                                       Style="{StaticResource LabelTextStyle}"/>
+                            <ComboBox x:Name="WebSearchProviderCombo" Grid.Column="1"
+                                      HorizontalAlignment="Stretch"
+                                      Background="{StaticResource AppInsetBrush}"
+                                      BorderBrush="{StaticResource AppStrokeBrush}"
+                                      Foreground="White"
+                                      SelectionChanged="WebSearchProviderCombo_SelectionChanged">
+                                <ComboBoxItem Content="duckduckgo" Tag="duckduckgo"/>
+                                <ComboBoxItem Content="google" Tag="google"/>
+                                <ComboBoxItem Content="bing" Tag="bing"/>
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="1" Text="Google API key" VerticalAlignment="Center"
+                                       Style="{StaticResource LabelTextStyle}"/>
+                            <PasswordBox x:Name="WebSearchGoogleApiKeyBox" Grid.Row="1" Grid.Column="1"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"
+                                         PlaceholderText="AIza..."/>
+
+                            <TextBlock Grid.Row="2" Text="Google Search Engine ID" VerticalAlignment="Center"
+                                       Style="{StaticResource LabelTextStyle}"/>
+                            <TextBox x:Name="WebSearchGoogleCseIdBox" Grid.Row="2" Grid.Column="1"
+                                     Background="{StaticResource AppInsetBrush}"
+                                     BorderBrush="{StaticResource AppStrokeBrush}"
+                                     Foreground="White"
+                                     PlaceholderText="cx=..."/>
+
+                            <TextBlock Grid.Row="3" Text="Bing API key" VerticalAlignment="Center"
+                                       Style="{StaticResource LabelTextStyle}"/>
+                            <PasswordBox x:Name="WebSearchBingApiKeyBox" Grid.Row="3" Grid.Column="1"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"
+                                         PlaceholderText="Bing v7 subscription key"/>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Save web search" Click="SaveWebSearchConfig_Click"
+                                    Background="{StaticResource AppAccentGradientBrush}"
+                                    BorderBrush="{StaticResource AppAccentDarkBrush}"
+                                    Foreground="#16110D" Padding="20,8"/>
+                            <TextBlock x:Name="WebSearchSaveStatus" VerticalAlignment="Center"
+                                       Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander.Content>
+            </Expander>
+
             <!-- ═══ I. Paths & System ═══ -->
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Expander.Header>

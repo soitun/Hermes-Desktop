@@ -42,10 +42,16 @@ public sealed class Agent : IAgent
     /// <summary>Max concurrent workers for parallel tool execution.</summary>
     private const int MaxParallelWorkers = 8;
 
-    /// <summary>Read-only tools safe for concurrent execution.</summary>
+    /// <summary>
+    /// Read-only tools safe for concurrent execution.
+    /// Names must match the runtime <see cref="ITool.Name"/> values registered with the agent —
+    /// not human-readable variants. The web tools register as "webfetch"/"websearch"
+    /// (no underscore), so any underscore variants would be silently bypassed by
+    /// <see cref="ShouldParallelize"/> and never benefit from parallelization.
+    /// </summary>
     private static readonly HashSet<string> ParallelSafeTools = new(StringComparer.OrdinalIgnoreCase)
     {
-        "read_file", "glob", "grep", "web_fetch", "web_search",
+        "read_file", "glob", "grep", "webfetch", "websearch",
         "session_search", "skill_invoke", "memory", "lsp"
     };
 
@@ -167,6 +173,16 @@ public sealed class Agent : IAgent
     /// Full chat loop with tool calling. Sends the user message, then iterates:
     /// LLM responds -> if tool calls, execute them -> feed results back -> repeat
     /// until LLM produces a final text response or we hit MaxToolIterations.
+    ///
+    /// Lifecycle guarantees:
+    ///   * Plugin/memory/soul system blocks injected for this turn are removed
+    ///     from <c>session.Messages</c> in <c>finally</c> so they do not accumulate
+    ///     across turns and silently exhaust the model's context window — this
+    ///     was the root cause of the v2.4.0 "tool-limit exhaustion" regression.
+    ///   * <see cref="PluginManager.OnTurnEndAsync"/> fires on every exit path
+    ///     (no-tools fast path, normal completion, max-iteration fallback,
+    ///     and exception unwind), so plugin state stays consistent even when
+    ///     the model misbehaves.
     /// </summary>
     public async Task<string> ChatAsync(string message, Session session, CancellationToken ct)
     {
@@ -177,77 +193,86 @@ public sealed class Agent : IAgent
             catch (Exception ex) { _logger.LogWarning(ex, "Plugin OnTurnStart failed"); }
         }
 
-        // ── Plugin system prompt blocks (includes memory via BuiltinMemoryPlugin) ──
-        if (_pluginManager is not null)
+        // Transient system messages injected at index 0 for THIS turn only.
+        // Tracked so we can pop them in finally — see class doc above.
+        int transientSystemMessages = 0;
+        string finalResponse = "";
+
+        try
         {
-            try
-            {
-                var pluginBlocks = await _pluginManager.GetSystemPromptBlocksAsync(ct);
-                if (!string.IsNullOrWhiteSpace(pluginBlocks))
-                {
-                    session.Messages.Insert(0, new Message
-                    {
-                        Role = "system",
-                        Content = pluginBlocks
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Plugin system prompt blocks failed");
-            }
-        }
-        else
-        {
-            await AgentContextAssembler.InjectMemoriesAsync(
-                session, message, _tools.Keys, _memories, _logger, ct);
-        }
-
-        // ── Add user message ──
-        await AgentSessionWriter.AppendUserMessageAsync(session, message, _transcripts, ct);
-
-        _logger.LogInformation("Processing message for session {SessionId}", session.Id);
-
-        await AgentContextAssembler.InjectSoulFallbackAsync(session, _contextManager, _soulService, _logger);
-
-        var preparedContext = await AgentContextAssembler.PrepareOptimizedContextAsync(
-            session.Id, message, _contextManager, _logger, ct);
-
-        if (_tools.Count == 0)
-        {
-            // No tools registered — simple completion
-            var messagesToSend = preparedContext ?? session.Messages;
-            // INV-004/005: Use active client (with fallback support)
-            var activeClient = GetActiveChatClient();
-            string response;
-            try
-            {
-                response = await activeClient.CompleteAsync(messagesToSend, ct);
-            }
-            catch (HttpRequestException ex) when (_fallbackChatClient is not null)
-            {
-                activeClient = ActivateFallback(ex);
-                response = await activeClient.CompleteAsync(messagesToSend, ct);
-            }
-            await AgentSessionWriter.AppendAssistantMessageAsync(session, response, _transcripts, ct);
-            if (_contextManager is not null)
-                await _contextManager.UpdateAfterResponseAsync(session.Id, ct: ct);
-
-            // Plugin turn end
+            // ── Plugin system prompt blocks (includes memory via BuiltinMemoryPlugin) ──
             if (_pluginManager is not null)
             {
-                try { await _pluginManager.OnTurnEndAsync(message, response, session.Id, ct); }
-                catch (Exception ex) { _logger.LogWarning(ex, "Plugin OnTurnEnd failed"); }
+                try
+                {
+                    var pluginBlocks = await _pluginManager.GetSystemPromptBlocksAsync(ct);
+                    if (!string.IsNullOrWhiteSpace(pluginBlocks))
+                    {
+                        session.Messages.Insert(0, new Message
+                        {
+                            Role = "system",
+                            Content = pluginBlocks
+                        });
+                        transientSystemMessages++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Plugin system prompt blocks failed");
+                }
+            }
+            else
+            {
+                int before = session.Messages.Count;
+                await AgentContextAssembler.InjectMemoriesAsync(
+                    session, message, _tools.Keys, _memories, _logger, ct);
+                transientSystemMessages += Math.Max(0, session.Messages.Count - before);
             }
 
-            return response;
-        }
+            // ── Add user message ──
+            await AgentSessionWriter.AppendUserMessageAsync(session, message, _transcripts, ct);
 
-        var toolDefs = GetToolDefinitions();
-        var iterations = 0;
+            _logger.LogInformation("Processing message for session {SessionId}", session.Id);
 
-        while (iterations < MaxToolIterations)
-        {
+            int beforeSoul = session.Messages.Count;
+            await AgentContextAssembler.InjectSoulFallbackAsync(session, _contextManager, _soulService, _logger);
+            // Soul fallback inserts at index 0 too — track for cleanup.
+            int afterSoul = session.Messages.Count;
+            if (afterSoul > beforeSoul)
+                transientSystemMessages += (afterSoul - beforeSoul);
+
+            var preparedContext = await AgentContextAssembler.PrepareOptimizedContextAsync(
+                session.Id, message, _contextManager, _logger, ct);
+
+            if (_tools.Count == 0)
+            {
+                // No tools registered — simple completion
+                var messagesToSend = preparedContext ?? session.Messages;
+                // INV-004/005: Use active client (with fallback support)
+                var activeClient = GetActiveChatClient();
+                string response;
+                try
+                {
+                    response = await activeClient.CompleteAsync(messagesToSend, ct);
+                }
+                catch (HttpRequestException ex) when (_fallbackChatClient is not null)
+                {
+                    activeClient = ActivateFallback(ex);
+                    response = await activeClient.CompleteAsync(messagesToSend, ct);
+                }
+                await AgentSessionWriter.AppendAssistantMessageAsync(session, response, _transcripts, ct);
+                if (_contextManager is not null)
+                    await _contextManager.UpdateAfterResponseAsync(session.Id, ct: ct);
+
+                finalResponse = response;
+                return response;
+            }
+
+            var toolDefs = GetToolDefinitions();
+            var iterations = 0;
+
+            while (iterations < MaxToolIterations)
+            {
             iterations++;
 
             // Use prepared context for first iteration, then fall back to session.Messages
@@ -276,6 +301,7 @@ public sealed class Agent : IAgent
                 await AgentSessionWriter.AppendAssistantMessageAsync(session, finalContent, _transcripts, ct);
                 if (_contextManager is not null)
                     await _contextManager.UpdateAfterResponseAsync(session.Id, ct: ct);
+                finalResponse = finalContent;
                 return finalContent;
             }
 
@@ -502,10 +528,36 @@ public sealed class Agent : IAgent
             } // end else (sequential path)
         }
 
-        _logger.LogWarning("Hit max tool iterations ({Max}) for session {SessionId}", MaxToolIterations, session.Id);
-        var fallback = "I've reached the maximum number of tool call iterations. Here's what I've accomplished so far based on the conversation above.";
-        await AgentSessionWriter.AppendAssistantMessageAsync(session, fallback, _transcripts, ct);
-        return fallback;
+            _logger.LogWarning("Hit max tool iterations ({Max}) for session {SessionId}", MaxToolIterations, session.Id);
+            var fallback = "I've reached the maximum number of tool call iterations. Here's what I've accomplished so far based on the conversation above.";
+            await AgentSessionWriter.AppendAssistantMessageAsync(session, fallback, _transcripts, ct);
+            if (_contextManager is not null)
+                await _contextManager.UpdateAfterResponseAsync(session.Id, ct: ct);
+            finalResponse = fallback;
+            return fallback;
+        }
+        finally
+        {
+            // ── Pop transient system messages so they don't accumulate across turns ──
+            // Plugin/memory/soul blocks are regenerated every turn against the latest
+            // session state; if we leave them in session.Messages, we both bloat the
+            // context window AND duplicate stale snapshots that confuse the model.
+            // This is the regression that surfaced as "tool-limit exhaustion" in v2.4.0.
+            for (int i = 0; i < transientSystemMessages && session.Messages.Count > 0; i++)
+            {
+                if (session.Messages[0].Role == "system")
+                    session.Messages.RemoveAt(0);
+                else
+                    break; // Defensive: shape changed underneath us; stop rather than corrupt.
+            }
+
+            // ── Plugin turn end fires on EVERY exit path (success, no-tools, max-iter, exception) ──
+            if (_pluginManager is not null)
+            {
+                try { await _pluginManager.OnTurnEndAsync(message, finalResponse, session.Id, ct); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Plugin OnTurnEnd failed"); }
+            }
+        }
     }
 
     /// <summary>
@@ -517,6 +569,11 @@ public sealed class Agent : IAgent
         string message, Session session,
         [EnumeratorCancellation] CancellationToken ct)
     {
+        // Track transient system messages injected this turn (memory + soul) so we
+        // can pop them in finally and avoid the v2.4.0 context-bloat regression
+        // where every streaming turn left another stale snapshot at index 0.
+        int transientSystemMessages = 0;
+
         // ── Memory injection ──
         if (_memories is not null)
         {
@@ -533,6 +590,7 @@ public sealed class Agent : IAgent
                         Role = "system",
                         Content = $"[Relevant Memories]\n{memoryBlock}"
                     });
+                    transientSystemMessages++;
                 }
             }
             catch (Exception ex)
@@ -562,6 +620,7 @@ public sealed class Agent : IAgent
                         Role = "system",
                         Content = soulContext
                     });
+                    transientSystemMessages++;
                 }
             }
             catch (Exception ex)
@@ -570,6 +629,12 @@ public sealed class Agent : IAgent
             }
         }
 
+        // Wrap the rest of the iterator in try/finally so transient system messages
+        // get cleaned up on every exit path — including yield break, exception unwind,
+        // and consumer-driven cancellation. C# iterators allow `yield return` inside
+        // a try block that has a finally clause.
+        try
+        {
         // ── Context manager integration ──
         List<Message>? preparedContext = null;
         if (_contextManager is not null)
@@ -828,6 +893,21 @@ public sealed class Agent : IAgent
         session.AddMessage(fallbackMsg);
         if (_transcripts is not null)
             await _transcripts.SaveMessageAsync(session.Id, fallbackMsg, ct);
+        if (_contextManager is not null)
+            await _contextManager.UpdateAfterResponseAsync(session.Id, ct: ct);
+        }
+        finally
+        {
+            // Pop transient system messages so they do not leak across turns.
+            // See ChatAsync for the full rationale.
+            for (int i = 0; i < transientSystemMessages && session.Messages.Count > 0; i++)
+            {
+                if (session.Messages[0].Role == "system")
+                    session.Messages.RemoveAt(0);
+                else
+                    break;
+            }
+        }
     }
 
     /// <summary>Determine if a batch of tool calls can be safely parallelized.</summary>

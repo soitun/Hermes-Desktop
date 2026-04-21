@@ -462,18 +462,22 @@ public class AgentPluginManagerTests
         var agent = new Agent(_mockChatClient.Object, NullLogger<Agent>.Instance, pluginManager: _pluginManager);
         var session = new Session { Id = "pm-sess-3" };
 
-        IEnumerable<Message>? captured = null;
+        // Snapshot at callback time. We changed Agent.ChatAsync to pop transient
+        // system messages in finally so they don't accumulate across turns —
+        // capturing the live reference and materializing it later observes
+        // post-cleanup state, which would falsely fail. What we actually care
+        // about is what got SENT to the LLM, which is the snapshot at the call site.
+        List<Message>? captured = null;
         _mockChatClient
             .Setup(c => c.CompleteAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
-            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => captured = msgs)
+            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => captured = msgs.ToList())
             .ReturnsAsync("ok");
 
         await agent.ChatAsync("question", session, CancellationToken.None);
 
         Assert.IsNotNull(captured);
-        var messages = captured.ToList();
-        Assert.IsTrue(messages.Any(m => m.Role == "system"),
-            "A system message from the plugin should have been inserted");
+        Assert.IsTrue(captured.Any(m => m.Role == "system"),
+            "A system message from the plugin should have been sent to the LLM");
     }
 
     [TestMethod]
@@ -485,10 +489,11 @@ public class AgentPluginManagerTests
         var agent = new Agent(_mockChatClient.Object, NullLogger<Agent>.Instance, pluginManager: _pluginManager);
         var session = new Session { Id = "pm-content-check" };
 
-        IEnumerable<Message>? captured = null;
+        // See sibling test for the "snapshot at callback time" rationale.
+        List<Message>? captured = null;
         _mockChatClient
             .Setup(c => c.CompleteAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
-            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => captured = msgs)
+            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => captured = msgs.ToList())
             .ReturnsAsync("ok");
 
         await agent.ChatAsync("q", session, CancellationToken.None);

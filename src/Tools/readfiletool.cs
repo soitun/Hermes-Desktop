@@ -15,9 +15,34 @@ public sealed class ReadFileTool : ITool
     public Task<ToolResult> ExecuteAsync(object parameters, CancellationToken ct)
     {
         var p = (ReadFileParameters)parameters;
-        return ReadFileAsync(p.FilePath, p.Offset, p.Limit, ct);
+        return ReadFileAsync(ResolvePath(p.FilePath), p.Offset, p.Limit, ct);
     }
-    
+
+    /// <summary>
+    /// Resolve a tool-supplied path. Absolute paths are honored as-is; relative
+    /// paths are resolved against <c>HERMES_DESKTOP_WORKSPACE</c> when set so the
+    /// model can reference workspace files without knowing the absolute prefix
+    /// (the v2.4.0 regression: relative paths silently bound to the process CWD,
+    /// which on Windows installers is typically <c>C:\Windows\System32</c>).
+    /// Falls back to <see cref="Directory.GetCurrentDirectory"/> when the env
+    /// var is unset, preserving prior behavior for users who haven't opted in.
+    /// </summary>
+    private static string ResolvePath(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) return filePath;
+        if (Path.IsPathRooted(filePath)) return filePath;
+
+        var workspace = Environment.GetEnvironmentVariable("HERMES_DESKTOP_WORKSPACE");
+        var baseDir = !string.IsNullOrWhiteSpace(workspace) && Directory.Exists(workspace)
+            ? workspace
+            : Directory.GetCurrentDirectory();
+
+        // Path.GetFullPath resolves ".." segments and normalizes separators —
+        // we deliberately do NOT clamp inside the workspace because tools
+        // legitimately read system files (config samples, bundled assets).
+        return Path.GetFullPath(Path.Combine(baseDir, filePath));
+    }
+
     private Task<ToolResult> ReadFileAsync(string filePath, int? offset, int? limit, CancellationToken ct)
     {
         try

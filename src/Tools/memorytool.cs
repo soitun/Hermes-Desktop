@@ -41,8 +41,39 @@ public sealed class MemoryTool : ITool
         var filename = $"memory_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid().ToString("N")[..8]}.md";
         var filePath = Path.Combine(_memoryDir, filename);
 
-        await File.WriteAllTextAsync(filePath, content, ct);
+        // Ensure compatible YAML frontmatter so MemoryManager.ScanMemoryFilesAsync
+        // can parse and surface this file. Without it, ParseFrontmatterAsync returns
+        // null and the memory is silently dropped from retrieval — the v2.4.0
+        // regression where agent-saved memories never resurfaced in later turns.
+        // We only inject when the content does NOT already start with a fence;
+        // models that produce well-formed frontmatter must not be double-wrapped.
+        var payload = HasFrontmatter(content)
+            ? content
+            : BuildDefaultFrontmatter(filename) + content;
+
+        await File.WriteAllTextAsync(filePath, payload, ct);
         return ToolResult.Ok($"Memory saved: {filename}");
+    }
+
+    /// <summary>True when content already opens with a YAML frontmatter fence.</summary>
+    private static bool HasFrontmatter(string content)
+    {
+        // Trim leading whitespace/BOM but be defensive: only accept a literal "---"
+        // line at the very top, matching MemoryManager.ParseFrontmatterAsync semantics.
+        ReadOnlySpan<char> span = content.AsSpan().TrimStart();
+        return span.Length >= 3 && span[0] == '-' && span[1] == '-' && span[2] == '-';
+    }
+
+    /// <summary>
+    /// Build a minimal frontmatter block whose keys (name, description, type) match
+    /// the <c>MemoryFrontmatter</c> contract used by MemoryManager. Description is
+    /// derived from the filename rather than guessed content, so the tool stays
+    /// deterministic and never invents semantic metadata it doesn't have.
+    /// </summary>
+    private static string BuildDefaultFrontmatter(string filename)
+    {
+        var name = Path.GetFileNameWithoutExtension(filename);
+        return $"---\nname: {name}\ndescription: Auto-saved by memory tool\ntype: user\n---\n";
     }
 
     private Task<ToolResult> ListMemoriesAsync(CancellationToken ct)
