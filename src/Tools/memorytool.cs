@@ -47,21 +47,55 @@ public sealed class MemoryTool : ITool
         // regression where agent-saved memories never resurfaced in later turns.
         // We only inject when the content does NOT already start with a fence;
         // models that produce well-formed frontmatter must not be double-wrapped.
-        var payload = HasFrontmatter(content)
-            ? content
-            : BuildDefaultFrontmatter(filename) + content;
+        //
+        // StripLeadingBlankLines (not full TrimStart) is important: MemoryManager
+        // requires lines[0].Trim() == "---", so a content that begins with blank
+        // lines followed by "---" must have those blanks removed before writing.
+        var normalized = StripLeadingBlankLines(content!);
+        var payload = HasFrontmatter(normalized)
+            ? normalized
+            : BuildDefaultFrontmatter(filename) + normalized;
 
         await File.WriteAllTextAsync(filePath, payload, ct);
         return ToolResult.Ok($"Memory saved: {filename}");
     }
 
+    /// <summary>
+    /// Strip BOM and any leading blank lines (including whitespace-only lines)
+    /// so the resulting first line is the real content. MemoryManager reads
+    /// <c>lines[0]</c> and rejects the file if that line isn't <c>---</c>.
+    /// </summary>
+    private static string StripLeadingBlankLines(string content)
+    {
+        var span = content.AsSpan();
+        if (span.Length > 0 && span[0] == '﻿') span = span[1..]; // BOM
+
+        int i = 0;
+        while (i < span.Length)
+        {
+            // Scan to end of current line
+            int lineEnd = i;
+            while (lineEnd < span.Length && span[lineEnd] != '\n') lineEnd++;
+            var line = span[i..lineEnd];
+            bool isBlank = true;
+            foreach (var c in line)
+            {
+                if (c is not (' ' or '\t' or '\r')) { isBlank = false; break; }
+            }
+            if (!isBlank) break;
+            i = lineEnd < span.Length ? lineEnd + 1 : lineEnd;
+        }
+        return i == 0 && span.Length == content.Length
+            ? content
+            : span[i..].ToString();
+    }
+
     /// <summary>True when content already opens with a YAML frontmatter fence.</summary>
     private static bool HasFrontmatter(string content)
     {
-        // Trim leading whitespace/BOM but be defensive: only accept a literal "---"
-        // line at the very top, matching MemoryManager.ParseFrontmatterAsync semantics.
-        ReadOnlySpan<char> span = content.AsSpan().TrimStart();
-        return span.Length >= 3 && span[0] == '-' && span[1] == '-' && span[2] == '-';
+        // After StripLeadingBlankLines the content must start exactly with "---",
+        // matching MemoryManager.ParseFrontmatterAsync's lines[0].Trim() == "---" check.
+        return content.Length >= 3 && content[0] == '-' && content[1] == '-' && content[2] == '-';
     }
 
     /// <summary>

@@ -1242,35 +1242,47 @@
   <data name="SettingsSavePluginBtn.Content" xml:space="preserve">
     <value>Save Plugin Config</value>
   </data>
-  <data name="SettingsExpWebSearchHeader.Text" xml:space="preserve">
+  <data name="SettingsExpSearchHeader.Text" xml:space="preserve">
     <value>Web Search</value>
   </data>
-  <data name="SettingsWebSearchDescription.Text" xml:space="preserve">
-    <value>Provider used by the websearch tool. DuckDuckGo requires no API key. Google requires an API key AND a Custom Search Engine ID. Bing requires an API key.</value>
+  <data name="SearchProviderDuckDuckGoItem.Content" xml:space="preserve">
+    <value>DuckDuckGo (no key required)</value>
   </data>
-  <data name="SettingsLblWebSearchProvider.Text" xml:space="preserve">
-    <value>Provider</value>
+  <data name="SearchProviderGoogleItem.Content" xml:space="preserve">
+    <value>Google Custom Search</value>
   </data>
-  <data name="SettingsLblWebSearchGoogleApiKey.Text" xml:space="preserve">
-    <value>Google API key</value>
+  <data name="SearchProviderBingItem.Content" xml:space="preserve">
+    <value>Bing Web Search</value>
   </data>
-  <data name="SettingsWebSearchGoogleApiKeyBox.PlaceholderText" xml:space="preserve">
-    <value>AIza...</value>
+  <data name="SettingsSearchMissingGoogleKey" xml:space="preserve">
+    <value>Google search requires both API key and Engine ID.</value>
   </data>
-  <data name="SettingsLblWebSearchGoogleCseId.Text" xml:space="preserve">
-    <value>Google Search Engine ID</value>
+  <data name="SettingsSearchMissingBingKey" xml:space="preserve">
+    <value>Bing search requires an API key.</value>
   </data>
-  <data name="SettingsWebSearchGoogleCseIdBox.PlaceholderText" xml:space="preserve">
-    <value>cx=...</value>
+  <data name="SettingsLblSearchProvider.Text" xml:space="preserve">
+    <value>SEARCH PROVIDER</value>
   </data>
-  <data name="SettingsLblWebSearchBingApiKey.Text" xml:space="preserve">
-    <value>Bing API key</value>
+  <data name="SettingsLblSearchGoogleApiKey.Text" xml:space="preserve">
+    <value>GOOGLE API KEY</value>
   </data>
-  <data name="SettingsWebSearchBingApiKeyBox.PlaceholderText" xml:space="preserve">
-    <value>Bing v7 subscription key</value>
+  <data name="SettingsSearchGoogleApiKeyBox.PlaceholderText" xml:space="preserve">
+    <value>Required for Google Custom Search</value>
   </data>
-  <data name="SettingsSaveWebSearchBtn.Content" xml:space="preserve">
-    <value>Save Web Search</value>
+  <data name="SettingsLblSearchGoogleEngineId.Text" xml:space="preserve">
+    <value>GOOGLE ENGINE ID (CX)</value>
+  </data>
+  <data name="SettingsSearchGoogleEngineIdBox.PlaceholderText" xml:space="preserve">
+    <value>Custom Search Engine identifier</value>
+  </data>
+  <data name="SettingsLblSearchBingApiKey.Text" xml:space="preserve">
+    <value>BING API KEY</value>
+  </data>
+  <data name="SettingsSearchBingApiKeyBox.PlaceholderText" xml:space="preserve">
+    <value>Required for Bing Web Search</value>
+  </data>
+  <data name="SettingsSaveSearchBtn.Content" xml:space="preserve">
+    <value>Save Search Config</value>
   </data>
   <data name="SettingsExpPathsSystemHeader.Text" xml:space="preserve">
     <value>Paths &amp; System</value>

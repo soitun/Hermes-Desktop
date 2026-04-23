@@ -254,47 +254,6 @@ internal static class HermesEnvironment
         }
     }
 
-    /// <summary>
-    /// Build a <see cref="Hermes.Agent.Tools.WebSearchConfig"/> from the
-    /// <c>web_search:</c> section of <c>config.yaml</c>. Falls back to
-    /// DuckDuckGo when no provider is configured (no API key required), so
-    /// the tool always works out-of-the-box.
-    ///
-    /// Expected YAML shape:
-    ///   web_search:
-    ///     provider: google      # google | bing | duckduckgo
-    ///     google_api_key: ...
-    ///     google_search_engine_id: ...
-    ///     bing_api_key: ...
-    ///
-    /// Provider names are normalized to lower-case so config is forgiving of
-    /// "Google" / "GOOGLE" / "google". Keys for inactive providers are still
-    /// passed through to allow live provider switching at runtime without
-    /// re-reading the config.
-    /// </summary>
-    internal static Hermes.Agent.Tools.WebSearchConfig BuildWebSearchConfig()
-    {
-        var provider = (ReadConfigSetting("web_search", "provider") ?? "duckduckgo")
-            .Trim()
-            .ToLowerInvariant();
-
-        // Defensive whitelist — an unrecognized provider should fail open to
-        // DuckDuckGo rather than crash the agent on malformed config.
-        if (provider is not ("google" or "bing" or "duckduckgo"))
-            provider = "duckduckgo";
-
-        return new Hermes.Agent.Tools.WebSearchConfig
-        {
-            Provider = provider,
-            GoogleApiKey = NullIfEmpty(ReadConfigSetting("web_search", "google_api_key")),
-            GoogleSearchEngineId = NullIfEmpty(ReadConfigSetting("web_search", "google_search_engine_id")),
-            BingApiKey = NullIfEmpty(ReadConfigSetting("web_search", "bing_api_key")),
-        };
-    }
-
-    private static string? NullIfEmpty(string? s) =>
-        string.IsNullOrWhiteSpace(s) ? null : s;
-
     /// <summary>Read the gateway runtime state JSON if available.</summary>
     internal static string ReadGatewayState()
     {
@@ -776,6 +735,24 @@ internal static class HermesEnvironment
 
     /// <summary>Read a value from the integrations section of config.yaml.</summary>
     internal static string? ReadIntegrationSetting(string key) => ReadConfigSetting("integrations", key);
+
+    // ── Web search ──
+    /// <summary>
+    /// Provider the WebSearchTool should use. Normalization lives next to the
+    /// tool itself (<see cref="Hermes.Agent.Tools.WebSearchConfig.NormalizeProvider"/>)
+    /// so the list of supported providers stays in one place.
+    /// </summary>
+    internal static string WebSearchProvider =>
+        Hermes.Agent.Tools.WebSearchConfig.NormalizeProvider(ReadConfigSetting("search", "provider"));
+
+    internal static string? WebSearchGoogleApiKey =>
+        ReadConfigSetting("search", "google_api_key");
+
+    internal static string? WebSearchGoogleEngineId =>
+        ReadConfigSetting("search", "google_engine_id");
+
+    internal static string? WebSearchBingApiKey =>
+        ReadConfigSetting("search", "bing_api_key");
 
     /// <summary>Read a value from any top-level section of config.yaml (section.key).</summary>
     internal static string? ReadConfigSetting(string section, string key)

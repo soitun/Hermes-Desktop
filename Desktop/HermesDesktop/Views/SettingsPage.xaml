@@ -939,21 +939,16 @@
                 </Expander.Content>
             </Expander>
 
-            <!-- ═══ H2. Web Search ═══ -->
+            <!-- ═══ I. Web Search ═══ -->
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Expander.Header>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <FontIcon Glyph="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
-                        <TextBlock x:Uid="SettingsExpWebSearchHeader" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center"/>
+                        <TextBlock x:Uid="SettingsExpSearchHeader" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Expander.Header>
                 <Expander.Content>
                     <StackPanel Spacing="12" Padding="4,8,4,4">
-                        <TextBlock x:Uid="SettingsWebSearchDescription"
-                                   TextWrapping="Wrap"
-                                   Foreground="{StaticResource AppTextSecondaryBrush}"
-                                   FontSize="12"/>
-
                         <Grid ColumnSpacing="12" RowSpacing="10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="200"/>
@@ -966,57 +961,54 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock x:Uid="SettingsLblWebSearchProvider" VerticalAlignment="Center"
+                            <TextBlock x:Uid="SettingsLblSearchProvider" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
-                            <ComboBox x:Name="WebSearchProviderCombo" Grid.Column="1"
-                                      HorizontalAlignment="Stretch"
-                                      Background="{StaticResource AppInsetBrush}"
-                                      BorderBrush="{StaticResource AppStrokeBrush}"
-                                      Foreground="White"
-                                      SelectionChanged="WebSearchProviderCombo_SelectionChanged">
-                                <ComboBoxItem Content="duckduckgo" Tag="duckduckgo"/>
-                                <ComboBoxItem Content="google" Tag="google"/>
-                                <ComboBoxItem Content="bing" Tag="bing"/>
+                            <ComboBox x:Name="SearchProviderCombo" Grid.Column="1" HorizontalAlignment="Stretch"
+                                      SelectionChanged="SearchProvider_SelectionChanged">
+                                <ComboBoxItem x:Uid="SearchProviderDuckDuckGoItem" Tag="duckduckgo"/>
+                                <ComboBoxItem x:Uid="SearchProviderGoogleItem" Tag="google"/>
+                                <ComboBoxItem x:Uid="SearchProviderBingItem" Tag="bing"/>
                             </ComboBox>
 
-                            <TextBlock Grid.Row="1" x:Uid="SettingsLblWebSearchGoogleApiKey" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="1" x:Uid="SettingsLblSearchGoogleApiKey" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
-                            <PasswordBox x:Name="WebSearchGoogleApiKeyBox" Grid.Row="1" Grid.Column="1"
-                                         x:Uid="SettingsWebSearchGoogleApiKeyBox"
+                            <PasswordBox x:Name="SearchGoogleApiKeyBox" Grid.Row="1" Grid.Column="1"
+                                         x:Uid="SettingsSearchGoogleApiKeyBox"
                                          Background="{StaticResource AppInsetBrush}"
                                          BorderBrush="{StaticResource AppStrokeBrush}"
                                          Foreground="White"/>
 
-                            <TextBlock Grid.Row="2" x:Uid="SettingsLblWebSearchGoogleCseId" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="2" x:Uid="SettingsLblSearchGoogleEngineId" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox x:Name="WebSearchGoogleCseIdBox" Grid.Row="2" Grid.Column="1"
-                                     x:Uid="SettingsWebSearchGoogleCseIdBox"
+                            <TextBox x:Name="SearchGoogleEngineIdBox" Grid.Row="2" Grid.Column="1"
+                                     x:Uid="SettingsSearchGoogleEngineIdBox"
                                      Background="{StaticResource AppInsetBrush}"
                                      BorderBrush="{StaticResource AppStrokeBrush}"
                                      Foreground="White"/>
 
-                            <TextBlock Grid.Row="3" x:Uid="SettingsLblWebSearchBingApiKey" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="3" x:Uid="SettingsLblSearchBingApiKey" VerticalAlignment="Center"
                                        Style="{StaticResource LabelTextStyle}"/>
-                            <PasswordBox x:Name="WebSearchBingApiKeyBox" Grid.Row="3" Grid.Column="1"
-                                         x:Uid="SettingsWebSearchBingApiKeyBox"
+                            <PasswordBox x:Name="SearchBingApiKeyBox" Grid.Row="3" Grid.Column="1"
+                                         x:Uid="SettingsSearchBingApiKeyBox"
                                          Background="{StaticResource AppInsetBrush}"
                                          BorderBrush="{StaticResource AppStrokeBrush}"
                                          Foreground="White"/>
                         </Grid>
 
+                        <!-- Save -->
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Button x:Uid="SettingsSaveWebSearchBtn" Click="SaveWebSearchConfig_Click"
+                            <Button x:Uid="SettingsSaveSearchBtn" Click="SaveSearchConfig_Click"
                                     Background="{StaticResource AppAccentGradientBrush}"
                                     BorderBrush="{StaticResource AppAccentDarkBrush}"
                                     Foreground="#16110D" Padding="20,8"/>
-                            <TextBlock x:Name="WebSearchSaveStatus" VerticalAlignment="Center"
+                            <TextBlock x:Name="SearchSaveStatus" VerticalAlignment="Center"
                                        Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13"/>
                         </StackPanel>
                     </StackPanel>
                 </Expander.Content>
             </Expander>
 
-            <!-- ═══ I. Paths & System ═══ -->
+            <!-- ═══ J. Paths & System ═══ -->
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Expander.Header>
                     <StackPanel Orientation="Horizontal" Spacing="10">

@@ -1236,35 +1236,47 @@
   <data name="SettingsSavePluginBtn.Content" xml:space="preserve">
     <value>保存插件配置</value>
   </data>
-  <data name="SettingsExpWebSearchHeader.Text" xml:space="preserve">
-    <value>网页搜索</value>
+  <data name="SettingsExpSearchHeader.Text" xml:space="preserve">
+    <value>网络搜索</value>
   </data>
-  <data name="SettingsWebSearchDescription.Text" xml:space="preserve">
-    <value>websearch 工具使用的提供方。DuckDuckGo 无需 API 密钥；Google 需要 API 密钥和自定义搜索引擎 ID；Bing 需要 API 密钥。</value>
+  <data name="SearchProviderDuckDuckGoItem.Content" xml:space="preserve">
+    <value>DuckDuckGo（无需密钥）</value>
   </data>
-  <data name="SettingsLblWebSearchProvider.Text" xml:space="preserve">
-    <value>提供方</value>
+  <data name="SearchProviderGoogleItem.Content" xml:space="preserve">
+    <value>Google 自定义搜索</value>
   </data>
-  <data name="SettingsLblWebSearchGoogleApiKey.Text" xml:space="preserve">
-    <value>Google API 密钥</value>
+  <data name="SearchProviderBingItem.Content" xml:space="preserve">
+    <value>Bing 网络搜索</value>
   </data>
-  <data name="SettingsWebSearchGoogleApiKeyBox.PlaceholderText" xml:space="preserve">
-    <value>AIza...</value>
+  <data name="SettingsSearchMissingGoogleKey" xml:space="preserve">
+    <value>Google 搜索需要 API 密钥和引擎 ID。</value>
   </data>
-  <data name="SettingsLblWebSearchGoogleCseId.Text" xml:space="preserve">
-    <value>Google 搜索引擎 ID</value>
+  <data name="SettingsSearchMissingBingKey" xml:space="preserve">
+    <value>Bing 搜索需要 API 密钥。</value>
   </data>
-  <data name="SettingsWebSearchGoogleCseIdBox.PlaceholderText" xml:space="preserve">
-    <value>cx=...</value>
+  <data name="SettingsLblSearchProvider.Text" xml:space="preserve">
+    <value>搜索提供商</value>
   </data>
-  <data name="SettingsLblWebSearchBingApiKey.Text" xml:space="preserve">
-    <value>Bing API 密钥</value>
+  <data name="SettingsLblSearchGoogleApiKey.Text" xml:space="preserve">
+    <value>GOOGLE API 密钥</value>
   </data>
-  <data name="SettingsWebSearchBingApiKeyBox.PlaceholderText" xml:space="preserve">
-    <value>Bing v7 订阅密钥</value>
+  <data name="SettingsSearchGoogleApiKeyBox.PlaceholderText" xml:space="preserve">
+    <value>Google 自定义搜索所需</value>
   </data>
-  <data name="SettingsSaveWebSearchBtn.Content" xml:space="preserve">
-    <value>保存网页搜索</value>
+  <data name="SettingsLblSearchGoogleEngineId.Text" xml:space="preserve">
+    <value>GOOGLE 引擎 ID (CX)</value>
+  </data>
+  <data name="SettingsSearchGoogleEngineIdBox.PlaceholderText" xml:space="preserve">
+    <value>自定义搜索引擎标识符</value>
+  </data>
+  <data name="SettingsLblSearchBingApiKey.Text" xml:space="preserve">
+    <value>BING API 密钥</value>
+  </data>
+  <data name="SettingsSearchBingApiKeyBox.PlaceholderText" xml:space="preserve">
+    <value>Bing 网络搜索所需</value>
+  </data>
+  <data name="SettingsSaveSearchBtn.Content" xml:space="preserve">
+    <value>保存搜索配置</value>
   </data>
   <data name="SettingsExpPathsSystemHeader.Text" xml:space="preserve">
     <value>路径与系统</value>
