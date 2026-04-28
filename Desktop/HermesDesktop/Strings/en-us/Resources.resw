@@ -651,6 +651,9 @@
   <data name="DashSystemCardTitle.Text" xml:space="preserve">
     <value>System</value>
   </data>
+  <data name="DashboardVersionLabel.Text" xml:space="preserve">
+    <value>Version</value>
+  </data>
   <data name="DashSystemSoulsLabel.Text" xml:space="preserve">
     <value>Souls</value>
   </data>

@@ -639,6 +639,9 @@
   <data name="DashSystemCardTitle.Text" xml:space="preserve">
     <value>系统</value>
   </data>
+  <data name="DashboardVersionLabel.Text" xml:space="preserve">
+    <value>版本</value>
+  </data>
   <data name="DashSystemSoulsLabel.Text" xml:space="preserve">
     <value>灵魂</value>
   </data>

@@ -193,6 +193,12 @@
                         <TextBlock x:Uid="DashSystemCardTitle" FontSize="16" FontWeight="SemiBold"/>
 
                         <StackPanel Spacing="4">
+                            <TextBlock x:Uid="DashboardVersionLabel" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
+                            <TextBlock Text="{x:Bind AppVersion, Mode=OneTime}" FontSize="12" FontFamily="Consolas"
+                                       Foreground="{StaticResource AppAccentTextBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
                             <TextBlock x:Uid="DashboardHermesHomeLabel" FontSize="11" Foreground="{StaticResource AppTextSecondaryBrush}"/>
                             <TextBlock Text="{x:Bind HermesHomePath, Mode=OneTime}" FontSize="12" TextWrapping="Wrap" FontFamily="Consolas"/>
                         </StackPanel>

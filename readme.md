@@ -6,7 +6,7 @@
 
 A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
-**v2.5.2** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
+**v2.5.3** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
 ---
 
@@ -225,6 +225,7 @@ Hermes.CS/
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v2.5.3** | 2026-04-28 | **Brand refresh:** app package icons, splash/tile assets, README logo, and Dashboard version display updated for the new Hermes mark. Assembly / MSIX manifest **2.5.3.0**. |
 | **v2.5.2** | 2026-04-28 | **Windows Sandbox:** native Windows Sandbox backend using generated `.wsb` configs, Desktop execution backend picker option, Bash tool honors configured backend, clear setup message when Windows Sandbox is unavailable. Assembly / MSIX manifest **2.5.2.0**. |
 | **v2.5.1** | 2026-04-27 | **MCP host:** startup bootstrap for `mcp.json`, standard config search paths, MCP tools registered with Agent and shared tool registry, native MCP input schemas exposed to models, docs at `docs/mcp.md`. Assembly / MSIX manifest **2.5.1.0**. |
 | **v2.5.0** | 2026-04-27 | **Reliability:** 30s streaming watchdog, structured provider errors (`ProviderTimeout`, `ProviderAuth`, `RateLimit`, `StreamParseError`), OpenAI/Anthropic transport + parse error surfacing. **Chat UX:** visible error banner with Retry and Switch Model actions. **Tests:** stream watchdog regression plus full desktop test suite. Assembly / MSIX manifest **2.5.0.0**. |

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using HermesDesktop.Services;
 using Hermes.Agent.Analytics;
 using Hermes.Agent.Core;
@@ -59,6 +60,7 @@ public sealed partial class DashboardPage : Page
     }
 
     // ── Data Properties (for x:Bind) ──
+    public string AppVersion => $"v{typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(App).Assembly.GetName().Version?.ToString() ?? "unknown"}";
     public string HermesHomePath => HermesEnvironment.DisplayHermesHomePath;
     public string HermesConfigPath => HermesEnvironment.DisplayHermesConfigPath;
 
