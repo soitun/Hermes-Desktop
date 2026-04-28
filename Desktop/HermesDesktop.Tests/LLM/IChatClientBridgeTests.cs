@@ -43,8 +43,15 @@ public class IChatClientBridgeTests
             return Task.FromResult(new ChatResponse { Content = "ok" });
         }
 
-        public IAsyncEnumerable<string> StreamAsync(IEnumerable<Message> messages, CancellationToken ct)
-            => throw new NotImplementedException();
+        // Tests never exercise this overload; return an empty async stream
+        // rather than throwing — keeps the symbol-guardrail allowlist clean.
+        public async IAsyncEnumerable<string> StreamAsync(
+            IEnumerable<Message> messages,
+            [EnumeratorCancellation] CancellationToken ct)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
 
         public async IAsyncEnumerable<StreamEvent> StreamAsync(
             string? systemPrompt,
