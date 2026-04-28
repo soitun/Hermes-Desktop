@@ -733,6 +733,9 @@ This file is a living document about the human I work with. It helps me provide 
                 ["docker_image"] = DockerImageBox.Text.Trim(),
                 ["container_cpu"] = ((int)DockerCpuBox.Value).ToString(CultureInfo.InvariantCulture),
                 ["container_memory"] = ((int)DockerMemoryBox.Value).ToString(CultureInfo.InvariantCulture),
+                ["windows_sandbox_networking"] = "false",
+                ["windows_sandbox_vgpu"] = "false",
+                ["windows_sandbox_read_only"] = "false",
             };
 
             await HermesEnvironment.SaveConfigSectionAsync("terminal", settings);

@@ -1191,6 +1191,9 @@
   <data name="SettingsExecLocal.Content" xml:space="preserve">
     <value>本地</value>
   </data>
+  <data name="SettingsExecWindowsSandbox.Content" xml:space="preserve">
+    <value>Windows Sandbox</value>
+  </data>
   <data name="SettingsExecDocker.Content" xml:space="preserve">
     <value>Docker</value>
   </data>

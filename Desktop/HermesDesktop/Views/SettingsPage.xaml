@@ -826,6 +826,7 @@
                                       BorderBrush="{StaticResource AppStrokeBrush}"
                                       SelectionChanged="ExecBackendCombo_SelectionChanged">
                                 <ComboBoxItem x:Uid="SettingsExecLocal" Tag="local"/>
+                                <ComboBoxItem x:Uid="SettingsExecWindowsSandbox" Tag="windows_sandbox"/>
                                 <ComboBoxItem x:Uid="SettingsExecDocker" Tag="docker"/>
                                 <ComboBoxItem x:Uid="SettingsExecSsh" Tag="ssh"/>
                                 <ComboBoxItem x:Uid="SettingsExecModal" Tag="modal"/>

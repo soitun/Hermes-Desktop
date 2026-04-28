@@ -145,7 +145,7 @@ type BashToolOutput = {
 #### Sandbox Implementation
 - **Linux**: `bwrap` (bubblewrap) based isolation
 - **macOS**: `sandbox-exec` based isolation
-- **Windows**: NO SANDBOX (bwrap/sandbox-exec are POSIX-only)
+- **Windows**: Windows Sandbox backend (`WindowsSandbox.exe` + generated `.wsb`) for local OS-provided isolation
 - **Enterprise policy**: If sandbox required and unavailable → execution blocked
 
 #### Auto-Background Thresholds
@@ -196,9 +196,9 @@ type PowerShellToolInput = {
 - `DISALLOWED_AUTO_BACKGROUND_COMMANDS`: `['start-sleep', 'sleep']`
 
 #### Windows Sandbox Issue
-> Windows-native sandbox policy: if enterprise requires sandbox but Windows native, execution blocked
+> Windows-native sandbox policy: prefer the Windows Sandbox backend when the optional Windows feature is available; otherwise execution is blocked when sandboxing is required.
 
-**This is a known limitation** - Windows doesn't have the same sandboxing as Linux/macOS.
+**Windows note** - Windows does not have the same process-level sandboxing as Linux/macOS, so Hermes uses Windows Sandbox as a local VM-backed isolation boundary.
 
 ---
 
@@ -500,15 +500,15 @@ else if (elapsedMs > PROGRESS_THRESHOLD_MS)
 
 ## 🔒 Security Considerations
 
-### Windows Sandbox Limitation
-The reference architecture has **no sandbox on Windows** - this is a known limitation. Options for Hermes.C#:
-1. **Windows Job Objects** - Process isolation, resource limits
-2. **AppContainer** - Windows Store app sandboxing (complex)
-3. **Hyper-V containers** - Heavy but secure
-4. **Accept the limitation** - Document it, rely on permission system
+### Windows Sandbox
+The reference architecture originally had **no sandbox on Windows**. Hermes.C# now supports a Windows Sandbox backend and can still evaluate other Windows-native boundaries:
+1. **Windows Sandbox** - Built-in local VM-backed sandbox using generated `.wsb` configs
+2. **Windows Job Objects** - Process isolation, resource limits
+3. **AppContainer** - Windows Store app sandboxing (complex)
+4. **Hyper-V containers** - Heavy but secure
 
 ### Permission System is Critical
-Without OS-level sandboxing, the permission system becomes the primary security boundary:
+When OS-level sandboxing is unavailable or disabled, the permission system becomes the primary security boundary:
 - Conservative defaults (ask before executing)
 - Pattern-based rules (allow `git *` but ask for `rm *`)
 - Path-based restrictions (only allow writes in workspace)

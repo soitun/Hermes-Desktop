@@ -6,7 +6,7 @@ using Hermes.Agent.Security;
 
 /// <summary>
 /// Bash/PowerShell shell command execution tool.
-/// Routes through execution backends (Local, Docker, SSH, Modal, Daytona).
+/// Routes through execution backends (Local, Windows Sandbox, Docker, SSH, Modal, Daytona).
 /// Supports timeout, background execution, sandbox enforcement, and security validation.
 /// </summary>
 public sealed class BashTool : ITool
@@ -16,7 +16,7 @@ public sealed class BashTool : ITool
     private IExecutionBackend _backend;
 
     public string Name => "bash";
-    public string Description => "Execute shell commands with timeout, background support, security validation. Supports local, Docker, SSH, Modal, and Daytona backends.";
+    public string Description => "Execute shell commands with timeout, background support, security validation. Supports local, Windows Sandbox, Docker, SSH, Modal, and Daytona backends.";
     public Type ParametersType => typeof(BashParameters);
 
     public BashTool(BashSecurityPolicy? policy = null, ExecutionConfig? executionConfig = null)

@@ -18,6 +18,7 @@ using Hermes.Agent.Analytics;
 using Hermes.Agent.Plugins;
 using Hermes.Agent.Soul;
 using Hermes.Agent.Tools;
+using Hermes.Agent.Execution;
 using Hermes.Agent.Gateway;
 using Hermes.Agent.Gateway.Platforms;
 using Hermes.Agent.Dreamer;
@@ -704,7 +705,7 @@ public partial class App : Application
         RegisterAndTrack(agent, toolRegistry, new GrepTool());
 
         // Shell execution tools
-        RegisterAndTrack(agent, toolRegistry, new BashTool());
+        RegisterAndTrack(agent, toolRegistry, new BashTool(executionConfig: BuildExecutionConfig()));
         RegisterAndTrack(agent, toolRegistry, new TerminalTool());
 
         // Web tools — pull provider + API keys from HermesEnvironment so the user's
@@ -767,6 +768,49 @@ public partial class App : Application
     {
         agent.RegisterTool(tool);
         registry.RegisterTool(tool);
+    }
+
+    private static ExecutionConfig BuildExecutionConfig()
+    {
+        var backend = HermesEnvironment.ReadConfigSetting("terminal", "backend") ?? "local";
+        var timeoutSeconds = HermesEnvironment.ReadConfigSetting("terminal", "timeout");
+        var timeoutMs = int.TryParse(timeoutSeconds, out var seconds) && seconds > 0
+            ? seconds * 1000
+            : 180_000;
+        var configuredWorkspace = HermesEnvironment.ReadConfigSetting("terminal", "working_directory");
+        if (string.IsNullOrWhiteSpace(configuredWorkspace) ||
+            string.Equals(configuredWorkspace.Trim(), ".", StringComparison.Ordinal))
+        {
+            configuredWorkspace = null;
+        }
+
+        return new ExecutionConfig
+        {
+            Backend = backend.ToLowerInvariant() switch
+            {
+                "windows_sandbox" or "windowssandbox" or "wsb" => ExecutionBackendType.WindowsSandbox,
+                "docker" => ExecutionBackendType.Docker,
+                "ssh" => ExecutionBackendType.Ssh,
+                "modal" => ExecutionBackendType.Modal,
+                "daytona" => ExecutionBackendType.Daytona,
+                _ => ExecutionBackendType.Local
+            },
+            DefaultTimeoutMs = timeoutMs,
+            DockerImage = HermesEnvironment.ReadConfigSetting("terminal", "docker_image"),
+            WindowsSandboxNetworking = string.Equals(
+                HermesEnvironment.ReadConfigSetting("terminal", "windows_sandbox_networking"),
+                "true",
+                StringComparison.OrdinalIgnoreCase),
+            WindowsSandboxVGpu = string.Equals(
+                HermesEnvironment.ReadConfigSetting("terminal", "windows_sandbox_vgpu"),
+                "true",
+                StringComparison.OrdinalIgnoreCase),
+            WindowsSandboxReadOnlyWorkspace = string.Equals(
+                HermesEnvironment.ReadConfigSetting("terminal", "windows_sandbox_read_only"),
+                "true",
+                StringComparison.OrdinalIgnoreCase),
+            WindowsSandboxMappedWorkspace = configuredWorkspace
+        };
     }
 
     /// <summary>

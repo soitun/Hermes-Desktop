@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 // ══════════════════════════════════════════════
 //
 // Upstream ref: tools/terminal_tool.py + tools/environments/
-// 6 backends: Local, Docker, SSH, Singularity, Modal, Daytona
+// Backends: Local, Windows Sandbox, Docker, SSH, Singularity, Modal, Daytona
 // Key patterns: backend factory via env var, output truncation
 // (40% head + 60% tail), workdir validation, exit code interpretation
 
@@ -18,6 +18,7 @@ using System.Text.Json.Serialization;
 public enum ExecutionBackendType
 {
     Local,
+    WindowsSandbox,
     Docker,
     Ssh,
     Singularity,
@@ -51,6 +52,12 @@ public sealed class ExecutionConfig
     public string? DockerImage { get; set; }
     public List<string> DockerVolumes { get; set; } = new List<string>();
     public Dictionary<string, string> DockerEnv { get; set; } = new();
+
+    // Windows Sandbox
+    public bool WindowsSandboxNetworking { get; set; } = false;
+    public bool WindowsSandboxVGpu { get; set; } = false;
+    public bool WindowsSandboxReadOnlyWorkspace { get; set; } = false;
+    public string? WindowsSandboxMappedWorkspace { get; set; }
 
     // SSH
     public string? SshHost { get; set; }
@@ -103,6 +110,7 @@ public static class ExecutionBackendFactory
     {
         return config.Backend switch
         {
+            ExecutionBackendType.WindowsSandbox => new WindowsSandboxBackend(config),
             ExecutionBackendType.Docker => new DockerBackend(config),
             ExecutionBackendType.Ssh => new SshBackend(config),
             ExecutionBackendType.Modal => new ModalBackend(config),
