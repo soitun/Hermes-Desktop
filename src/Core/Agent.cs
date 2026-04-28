@@ -732,8 +732,16 @@ public sealed class Agent : IAgent
             // Anthropic gets its system via the dedicated parameter.
             var (streamSystemPrompt, streamCoalescedMessages) =
                 SystemContext.Empty.CoalesceWith(messagesToSend);
+            // INV-004/005: honor active provider (primary or fallback). Without
+            // GetActiveChatClient() here, streaming would silently keep talking
+            // to a primary provider that ChatAsync had already failed off of.
+            // Async-iterator constraints (no yield-return inside catch) prevent
+            // mid-stream HttpRequestException → ActivateFallback retry on the
+            // streaming SSE itself; that's a separate concern. This change
+            // matches the cooperative behavior of the rest of the loop.
+            var streamingClient = GetActiveChatClient();
             await foreach (var evt in WatchProviderStreamAsync(
-                _chatClient.StreamAsync(streamSystemPrompt, streamCoalescedMessages, null, ct), ct))
+                streamingClient.StreamAsync(streamSystemPrompt, streamCoalescedMessages, null, ct), ct))
             {
                 if (evt is StreamEvent.TokenDelta td)
                     streamedResponse.Append(td.Text);
@@ -766,7 +774,24 @@ public sealed class Agent : IAgent
             // Same coalescing as the non-streaming tool loop — strict
             // OpenAI-compatible servers reject mid-list role:"system" entries.
             var (_, streamToolMessages) = SystemContext.Empty.CoalesceWith(messagesToUse);
-            var response = await _chatClient.CompleteWithToolsAsync(streamToolMessages, toolDefs, ct);
+            // INV-004/005: tool-loop calls inside StreamChatAsync are non-
+            // streaming (CompleteWithToolsAsync), so they can wear the same
+            // try/catch + ActivateFallback retry that ChatAsync has. Without
+            // this, a primary-provider HTTP failure during a tool round of
+            // a streamed turn would never trigger fallback — only ChatAsync
+            // turns would, and the two entry points would silently diverge
+            // in resilience.
+            var activeStreamToolClient = GetActiveChatClient();
+            ChatResponse response;
+            try
+            {
+                response = await activeStreamToolClient.CompleteWithToolsAsync(streamToolMessages, toolDefs, ct);
+            }
+            catch (HttpRequestException ex) when (_fallbackChatClient is not null)
+            {
+                activeStreamToolClient = ActivateFallback(ex);
+                response = await activeStreamToolClient.CompleteWithToolsAsync(streamToolMessages, toolDefs, ct);
+            }
 
             if (!response.HasToolCalls)
             {
