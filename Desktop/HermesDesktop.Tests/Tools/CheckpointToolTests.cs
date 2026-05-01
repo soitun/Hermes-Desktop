@@ -103,20 +103,13 @@ public class CheckpointToolTests
         // Create a junction inside source pointing back at source. With B's reparse-point
         // skip, this must not be followed; without it, CopyDirectory would loop forever.
         var junctionPath = Path.Combine(_workDir, "loop");
-        var psi = new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{junctionPath}\" \"{_workDir}\"")
-        {
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        using (var proc = Process.Start(psi))
+        using (var proc = Process.Start("cmd.exe", $"/c mklink /J \"{junctionPath}\" \"{_workDir}\""))
         {
             Assert.IsNotNull(proc);
             proc.WaitForExit(5000);
             if (proc.ExitCode != 0)
             {
-                Assert.Inconclusive($"mklink failed: {proc.StandardError.ReadToEnd()}");
+                Assert.Inconclusive($"mklink failed with exit code {proc.ExitCode}");
                 return;
             }
         }
@@ -227,13 +220,14 @@ public class CheckpointToolTests
     {
         // Junctions inside the test tree must be removed *before* Directory.Delete recursive,
         // otherwise the recursive delete would traverse them and risk deleting the target.
-        // Walk manually so we never recurse into a reparse point.
+        // Walk manually (List used as a stack) so we never recurse into a reparse point.
         if (!Directory.Exists(root)) return;
-        var stack = new Stack<string>();
-        stack.Push(root);
-        while (stack.Count > 0)
+        var pending = new List<string> { root };
+        while (pending.Count > 0)
         {
-            var current = stack.Pop();
+            var current = pending[pending.Count - 1];
+            pending.RemoveAt(pending.Count - 1);
+
             string[] subDirs;
             try { subDirs = Directory.GetDirectories(current); }
             catch (IOException) { continue; }
@@ -246,7 +240,7 @@ public class CheckpointToolTests
                     if ((File.GetAttributes(sub) & FileAttributes.ReparsePoint) != 0)
                         Directory.Delete(sub);  // delete the link, not its target
                     else
-                        stack.Push(sub);
+                        pending.Add(sub);
                 }
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
