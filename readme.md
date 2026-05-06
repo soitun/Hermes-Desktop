@@ -6,7 +6,7 @@
 
 A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
-**v2.5.4** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
+**v2.5.5** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
 ---
 
@@ -225,6 +225,7 @@ Hermes.CS/
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v2.5.5** | 2026-05-06 | **Stream resilience (issue #51):** mid-SSE `HttpRequestException` now retries against the configured fallback provider, gated to the SSE-handshake case (zero tokens emitted) and to turns currently on the primary client &mdash; avoids prompt-replay duplication and the "already on fallback" rethrow. **Chat input:** placeholder text now states the actual binding (`Enter` to send, `Shift+Enter` for a new line); the wrong-key resource lying about Ctrl+Enter is gone. **CI:** test-symbol guardrail allowlist extended with common BCL exception types so future tests don't trip on `HttpRequestException`/`NotImplementedException`/`Argument*`/`Timeout`. Assembly / MSIX manifest **2.5.5.0**. |
 | **v2.5.4** | 2026-04-28 | **Soul system repair:** runtime soul label now reflects `SOUL.md`, reset uses the shipped `Default` soul, project `AGENTS.md` rules enter prompt context, saved agents retain provider/model, and AutoDream starts soul learning. Assembly / MSIX manifest **2.5.4.0**. |
 | **v2.5.3** | 2026-04-28 | **Brand refresh:** app package icons, splash/tile assets, README logo, and Dashboard version display updated for the new Hermes mark. Assembly / MSIX manifest **2.5.3.0**. |
 | **v2.5.2** | 2026-04-28 | **Windows Sandbox:** native Windows Sandbox backend using generated `.wsb` configs, Desktop execution backend picker option, Bash tool honors configured backend, clear setup message when Windows Sandbox is unavailable. Assembly / MSIX manifest **2.5.2.0**. |
