@@ -37,9 +37,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <Button x:Name="HatchButton" Content="Hatch buddy" Click="HatchButton_Click"
-                            Background="{StaticResource AppAccentGradientBrush}"
-                            BorderBrush="{StaticResource AppAccentDarkBrush}"
-                            Foreground="#16110D" Padding="16,8"/>
+                            Style="{StaticResource PrimaryButtonStyle}"/>
                 </StackPanel>
                 <TextBlock x:Name="SetupStatusText" FontSize="12" TextWrapping="Wrap"
                            Foreground="{StaticResource AppTextSecondaryBrush}"/>
@@ -78,7 +76,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                         <TextBlock x:Name="BuddySpecies" Text="" FontSize="14"
                                    Foreground="{StaticResource AppTextSecondaryBrush}"/>
-                        <Border x:Name="RarityBadge" Background="#3A3A00" CornerRadius="6" Padding="10,4">
+                        <Border x:Name="RarityBadge" Background="{StaticResource AppOutlineBrush}" CornerRadius="6" Padding="10,4">
                             <TextBlock x:Name="RarityText" Text="" FontSize="11"
                                        Foreground="{StaticResource AppAccentTextBrush}"/>
                         </Border>
@@ -93,7 +91,7 @@
                                        Foreground="{StaticResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="StatInt" Grid.Column="1" Minimum="0" Maximum="100" Value="0"
                                          Height="8" Margin="8,0" CornerRadius="4"
-                                         Foreground="#508CC8" Background="#2A2520"/>
+                                         Foreground="{StaticResource BuddyStatIntBrush}" Background="{StaticResource ProgressTrackBrush}"/>
                             <TextBlock x:Name="StatIntVal" Grid.Column="2" Text="0" FontSize="12"
                                        Foreground="{StaticResource AppTextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
 
@@ -102,7 +100,7 @@
                                        Foreground="{StaticResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="StatEnr" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="0"
                                          Height="8" Margin="8,0" CornerRadius="4"
-                                         Foreground="#6BCB77" Background="#2A2520"/>
+                                         Foreground="{StaticResource BuddyStatEnrBrush}" Background="{StaticResource ProgressTrackBrush}"/>
                             <TextBlock x:Name="StatEnrVal" Grid.Row="1" Grid.Column="2" Text="0" FontSize="12"
                                        Foreground="{StaticResource AppTextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
 
@@ -111,7 +109,7 @@
                                        Foreground="{StaticResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="StatCre" Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="100" Value="0"
                                          Height="8" Margin="8,0" CornerRadius="4"
-                                         Foreground="#C88C50" Background="#2A2520"/>
+                                         Foreground="{StaticResource BuddyStatCreBrush}" Background="{StaticResource ProgressTrackBrush}"/>
                             <TextBlock x:Name="StatCreVal" Grid.Row="2" Grid.Column="2" Text="0" FontSize="12"
                                        Foreground="{StaticResource AppTextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
 
@@ -120,7 +118,7 @@
                                        Foreground="{StaticResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
                             <ProgressBar x:Name="StatFrn" Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="100" Value="0"
                                          Height="8" Margin="8,0" CornerRadius="4"
-                                         Foreground="#A064B4" Background="#2A2520"/>
+                                         Foreground="{StaticResource BuddyStatFrnBrush}" Background="{StaticResource ProgressTrackBrush}"/>
                             <TextBlock x:Name="StatFrnVal" Grid.Row="3" Grid.Column="2" Text="0" FontSize="12"
                                        Foreground="{StaticResource AppTextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </Grid>
@@ -133,13 +131,9 @@
 
                     <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
                         <Button x:Name="RefreshSoulButton" Content="Refresh personality" Click="RefreshSoulButton_Click"
-                                Background="{StaticResource AppInsetBrush}"
-                                BorderBrush="{StaticResource AppStrokeBrush}"
-                                Foreground="White" Padding="14,8"/>
+                                Style="{StaticResource SecondaryButtonStyle}"/>
                         <Button x:Name="ResetBuddyButton" Content="Reset buddy…" Click="ResetBuddyButton_Click"
-                                Background="{StaticResource AppInsetBrush}"
-                                BorderBrush="{StaticResource AppStrokeBrush}"
-                                Foreground="White" Padding="14,8"/>
+                                Style="{StaticResource SecondaryButtonStyle}"/>
                     </StackPanel>
                     <TextBlock x:Name="BuddyActionStatus" FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
                                Foreground="{StaticResource AppTextSecondaryBrush}"/>
