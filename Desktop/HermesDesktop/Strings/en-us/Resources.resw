@@ -37,7 +37,7 @@
     <value>Continuing Hermes session {0}</value>
   </data>
   <data name="ChatInputBox.PlaceholderText" xml:space="preserve">
-    <value>Ask Hermes to do something. Press Ctrl+Enter to send.</value>
+    <value>Ask Hermes to do something. Press Enter to send, Shift+Enter for a new line.</value>
   </data>
   <data name="ChatOpenCliButton.Content" xml:space="preserve">
     <value>Open terminal chat</value>
