@@ -86,7 +86,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Fail loudly if the tag already exists — we don't want to retag silently.
-          if (git rev-parse $tag 2>$null) {
+          if (git rev-parse --verify --quiet "refs/tags/$tag") {
             throw "Tag $tag already exists. Bump the version or delete the existing tag first."
           }
           git tag -a $tag -m "$tag — released via workflow_dispatch"
