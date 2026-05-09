@@ -8,6 +8,8 @@ A **Windows-native AI agent** that lives on your desktop. Chat with it, give it 
 
 **v2.5.7** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
+**Latest dogfood fix:** Buddy has been rebuilt from the old ASCII placeholder into a local WinUI vector companion with live character crafting. Pick species, palette, eyes, and accessory before hatch, adjust the look later, and keep the same saved rarity, stats, identity, name, and personality across sessions.
+
 ---
 
 ## Get Started
@@ -115,7 +117,14 @@ Built from lessons across 168+ upstream PRs and 46+ production incidents:
 
 ### Desktop App
 
-Eight pages: **Dashboard** (usage insights, KPIs, platform badges), **Chat** (tool calling, reasoning display, model switcher, side panels), **Agent** (identity editor, souls browser), **Skills** (searchable library with categories), **Memory** (browser + project rules editor), **Buddy** (companion with ASCII art), **Integrations** (Telegram, Discord, and more), **Settings** (model, memory, display, execution, paths).
+Eight pages: **Dashboard** (usage insights, KPIs, platform badges), **Chat** (tool calling, reasoning display, model switcher, side panels), **Agent** (identity editor, souls browser), **Skills** (searchable library with categories), **Memory** (browser + project rules editor), **Buddy** (craftable vector companion with persistent visual traits), **Integrations** (Telegram, Discord, and more), **Settings** (model, memory, display, execution, paths).
+
+### Buddy Companion
+
+- **Vector avatar instead of ASCII:** the Buddy page and side panel now use a native WinUI character renderer.
+- **Craft before hatch:** choose species, palette, eyes, and accessory with a live preview before creating the companion.
+- **Tune without rerolling:** after hatch, visual choices can be changed without changing rarity, stats, identity, name, or personality.
+- **Persistent and offline-safe:** crafted traits save to `buddy.json`; the renderer is local, so no web image API is needed.
 
 ### Messaging
 
