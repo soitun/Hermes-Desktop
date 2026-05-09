@@ -97,6 +97,12 @@ Hermes.CS is a C# port of NousResearch/hermes-agent (Python) with native Windows
 - Added MCP docs and tests for schema-backed tools / argument passthrough
 - See `docs/releases/v2.5.1.md` and root `readme.md` changelog
 
+## Hermes Desktop v2.5.6 (2026-05-09)
+
+- Reference-runtime improvements: planning tool, command registry, streaming accumulator, structured runtime events, browser state reporting, large-output routing, post-edit diagnostics, and durable timeline/tool lifecycle records
+- MCP config compatibility: case-insensitive `mcp.json` deserialization accepts standard camelCase `mcpServers`
+- See `docs/releases/v2.5.6.md` and root `readme.md` changelog
+
 ## Key Files
 - `readme.md` -- project README
 
