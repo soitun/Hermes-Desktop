@@ -65,45 +65,15 @@ public sealed partial class SettingsPage
 
     private async void SaveProfile_Click(object sender, RoutedEventArgs e)
     {
-        var name = (ProfileNameBox.Text ?? string.Empty).Trim();
-        var provider = (ProfileProviderBox.Text ?? string.Empty).Trim().ToLowerInvariant();
-        var modelId = (ProfileModelIdBox.Text ?? string.Empty).Trim();
-        var baseUrl = NullIfEmpty((ProfileBaseUrlBox.Text ?? string.Empty).Trim());
-        var apiKeyEnv = NullIfEmpty((ProfileApiKeyEnvBox.Text ?? string.Empty).Trim());
-        int? context = double.IsNaN(ProfileContextBox.Value) || ProfileContextBox.Value <= 0
-            ? null
-            : (int)ProfileContextBox.Value;
-        var favorite = ProfileFavoriteSwitch.IsOn;
-
-        if (string.IsNullOrWhiteSpace(name))
+        var draft = ReadProfileFormDraft();
+        var validationError = ValidateProfileForm(draft);
+        if (validationError is not null)
         {
-            SetProfileStatus("Name is required.", isError: true);
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(provider))
-        {
-            SetProfileStatus("Provider is required.", isError: true);
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(modelId))
-        {
-            SetProfileStatus("Model ID is required.", isError: true);
-            return;
-        }
-        if (baseUrl is not null && !IsValidEndpointUrl(baseUrl))
-        {
-            // Reject malformed or non-http(s) base URLs at save time so they cannot
-            // poison runtime config when this profile is later activated.
-            // (CodeRabbit, 2026-05-14.)
-            SetProfileStatus(
-                "Base URL must be an absolute http:// or https:// URL.",
-                isError: true);
+            SetProfileStatus(validationError, isError: true);
             return;
         }
 
-        var profile = _editingProfileId is null
-            ? SavedModelProfile.Create(name, provider, modelId, baseUrl, apiKeyEnv, context, favorite)
-            : new SavedModelProfile(_editingProfileId, name, provider, modelId, baseUrl, apiKeyEnv, context, favorite);
+        var profile = BuildProfileFromDraft(draft);
 
         try
         {
@@ -123,6 +93,53 @@ public sealed partial class SettingsPage
             SaveProfileBtn.IsEnabled = true;
         }
     }
+
+    private ProfileFormDraft ReadProfileFormDraft()
+    {
+        int? context = double.IsNaN(ProfileContextBox.Value) || ProfileContextBox.Value <= 0
+            ? null
+            : (int)ProfileContextBox.Value;
+
+        return new ProfileFormDraft(
+            (ProfileNameBox.Text ?? string.Empty).Trim(),
+            (ProfileProviderBox.Text ?? string.Empty).Trim().ToLowerInvariant(),
+            (ProfileModelIdBox.Text ?? string.Empty).Trim(),
+            NullIfEmpty((ProfileBaseUrlBox.Text ?? string.Empty).Trim()),
+            NullIfEmpty((ProfileApiKeyEnvBox.Text ?? string.Empty).Trim()),
+            context,
+            ProfileFavoriteSwitch.IsOn);
+    }
+
+    private static string? ValidateProfileForm(ProfileFormDraft draft)
+    {
+        if (string.IsNullOrWhiteSpace(draft.Name))
+            return "Name is required.";
+        if (string.IsNullOrWhiteSpace(draft.Provider))
+            return "Provider is required.";
+        if (string.IsNullOrWhiteSpace(draft.ModelId))
+            return "Model ID is required.";
+        if (draft.BaseUrl is not null && !IsValidEndpointUrl(draft.BaseUrl))
+            return "Base URL must be an absolute http:// or https:// URL.";
+        return null;
+    }
+
+    private SavedModelProfile BuildProfileFromDraft(ProfileFormDraft draft) =>
+        _editingProfileId is null
+            ? SavedModelProfile.Create(
+                draft.Name, draft.Provider, draft.ModelId,
+                draft.BaseUrl, draft.ApiKeyEnv, draft.Context, draft.Favorite)
+            : new SavedModelProfile(
+                _editingProfileId, draft.Name, draft.Provider, draft.ModelId,
+                draft.BaseUrl, draft.ApiKeyEnv, draft.Context, draft.Favorite);
+
+    private readonly record struct ProfileFormDraft(
+        string Name,
+        string Provider,
+        string ModelId,
+        string? BaseUrl,
+        string? ApiKeyEnv,
+        int? Context,
+        bool Favorite);
 
     private void NewProfile_Click(object sender, RoutedEventArgs e)
     {

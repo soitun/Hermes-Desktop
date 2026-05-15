@@ -66,22 +66,34 @@ public sealed class McpManager : IAsyncDisposable
     public IReadOnlyList<McpServerRuntimeStatus> GetRuntimeStatuses()
     {
         var list = new List<McpServerRuntimeStatus>(_configs.Count);
-        foreach (var c in _configs)
-        {
-            string transportLabel = c switch
-            {
-                McpStdioConfig => "stdio",
-                McpHttpConfig => "http_sse",
-                McpWebSocketConfig => "websocket",
-                _ => "unknown",
-            };
-
-            bool connected = _connections.TryGetValue(c.Name, out var conn) && conn.IsConnected;
-            int toolCount = _tools.Count(kvp => kvp.Key.StartsWith($"mcp__{c.Name}__", StringComparison.Ordinal));
-            list.Add(new McpServerRuntimeStatus(c.Name, transportLabel, connected, toolCount));
-        }
+        foreach (var config in _configs)
+            list.Add(ToRuntimeStatus(config));
 
         return list;
+    }
+
+    private McpServerRuntimeStatus ToRuntimeStatus(McpServerConfig config)
+    {
+        bool connected = _connections.TryGetValue(config.Name, out var conn) && conn.IsConnected;
+        return new McpServerRuntimeStatus(
+            config.Name,
+            GetTransportLabel(config),
+            connected,
+            CountToolsForServer(config.Name));
+    }
+
+    private static string GetTransportLabel(McpServerConfig config) => config switch
+    {
+        McpStdioConfig => "stdio",
+        McpHttpConfig => "http_sse",
+        McpWebSocketConfig => "websocket",
+        _ => "unknown",
+    };
+
+    private int CountToolsForServer(string serverName)
+    {
+        var prefix = $"mcp__{serverName}__";
+        return _tools.Count(kvp => kvp.Key.StartsWith(prefix, StringComparison.Ordinal));
     }
     
     /// <summary>
@@ -102,40 +114,8 @@ public sealed class McpManager : IAsyncDisposable
         
         foreach (var (name, serverConfig) in config.McpServers)
         {
-            McpServerConfig? mcpConfig = null;
-            
-            if (serverConfig.Command is not null)
-            {
-                mcpConfig = new McpStdioConfig(
-                    name,
-                    serverConfig.Command,
-                    serverConfig.Args,
-                    serverConfig.Env
-                );
-            }
-            else if (serverConfig.Url is not null)
-            {
-                if (!Uri.TryCreate(serverConfig.Url, UriKind.Absolute, out var absUrl))
-                {
-                    _loadIssues.Add(new McpConfigLoadIssue(name, "Invalid MCP URL."));
-                    _logger.LogWarning("MCP server {Name} skipped: invalid URL.", name);
-                    continue;
-                }
-
-                if (!McpRemoteEndpointValidator.TryValidateRemoteUri(absUrl, out var urlError))
-                {
-                    _loadIssues.Add(new McpConfigLoadIssue(name, urlError ?? "URL rejected by policy."));
-                    _logger.LogWarning("MCP server {Name} skipped: {Reason}", name, urlError);
-                    continue;
-                }
-
-                mcpConfig = new McpHttpConfig(name, absUrl, serverConfig.Headers);
-            }
-            
-            if (mcpConfig is not null)
-            {
+            if (TryCreateServerConfig(name, serverConfig, out var mcpConfig))
                 _configs.Add(mcpConfig);
-            }
         }
     }
     
@@ -170,6 +150,47 @@ public sealed class McpManager : IAsyncDisposable
         await Task.WhenAll(tasks);
     }
     
+    private bool TryCreateServerConfig(
+        string name,
+        McpServerConfigEntry entry,
+        out McpServerConfig config)
+    {
+        if (entry.Command is not null)
+        {
+            config = new McpStdioConfig(name, entry.Command, entry.Args, entry.Env);
+            return true;
+        }
+
+        if (entry.Url is null)
+        {
+            config = null!;
+            return false;
+        }
+
+        if (!Uri.TryCreate(entry.Url, UriKind.Absolute, out var absUrl))
+        {
+            RecordConfigSkip(name, "Invalid MCP URL.", "invalid URL");
+            config = null!;
+            return false;
+        }
+
+        if (!McpRemoteEndpointValidator.TryValidateRemoteUri(absUrl, out var urlError))
+        {
+            RecordConfigSkip(name, urlError ?? "URL rejected by policy.", urlError ?? "URL rejected by policy");
+            config = null!;
+            return false;
+        }
+
+        config = new McpHttpConfig(name, absUrl, entry.Headers);
+        return true;
+    }
+
+    private void RecordConfigSkip(string name, string issueMessage, string logReason)
+    {
+        _loadIssues.Add(new McpConfigLoadIssue(name, issueMessage));
+        _logger.LogWarning("MCP server {Name} skipped: {Reason}", name, logReason);
+    }
+
     private async Task ConnectServerAsync(McpServerConfig config, CancellationToken ct)
     {
         try

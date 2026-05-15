@@ -84,52 +84,78 @@ public static class GitHubPortableReleaseParser
         {
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
-            if (!root.TryGetProperty("tag_name", out var tagEl))
-                return null;
-            string? tagName = tagEl.GetString();
-            if (!TryParseVersionFromTag(tagName, out var version) || version is null)
-                return null;
-
-            if (!root.TryGetProperty("html_url", out var htmlEl))
-                return null;
-            string? htmlUrl = htmlEl.GetString();
-            if (string.IsNullOrWhiteSpace(htmlUrl) || !Uri.TryCreate(htmlUrl, UriKind.Absolute, out var releasePage))
+            if (!TryReadReleaseCore(root, out var tagName, out var version, out var releasePage) ||
+                releasePage is null)
                 return null;
 
             if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
                 return null;
 
-            Uri? zipUri = null;
-            Uri? shaUri = null;
-            foreach (var asset in assets.EnumerateArray())
-            {
-                if (!asset.TryGetProperty("name", out var nameEl) ||
-                    !asset.TryGetProperty("browser_download_url", out var urlEl))
-                    continue;
-
-                string? name = nameEl.GetString();
-                string? url = urlEl.GetString();
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(url))
-                    continue;
-
-                if (!Uri.TryCreate(url, UriKind.Absolute, out var absolute))
-                    continue;
-
-                if (string.Equals(name, PortableZipAssetName, StringComparison.Ordinal))
-                    zipUri = absolute;
-                else if (string.Equals(name, PortableSha256AssetName, StringComparison.Ordinal))
-                    shaUri = absolute;
-            }
-
-            if (zipUri is null || tagName is null)
+            if (!TryFindPortableAssetUris(assets, out var zipUri, out var shaUri) || zipUri is null)
                 return null;
 
-            return new PortableReleaseOffer(tagName, version, releasePage, zipUri, shaUri);
+            return new PortableReleaseOffer(tagName!, version!, releasePage, zipUri, shaUri);
         }
         catch (JsonException)
         {
             return null;
         }
+    }
+
+    private static bool TryReadReleaseCore(
+        JsonElement root,
+        out string? tagName,
+        out Version? version,
+        out Uri? releasePage)
+    {
+        tagName = null;
+        version = null;
+        releasePage = null;
+
+        if (!root.TryGetProperty("tag_name", out var tagEl))
+            return false;
+
+        tagName = tagEl.GetString();
+        if (!TryParseVersionFromTag(tagName, out version) || version is null)
+            return false;
+
+        if (!root.TryGetProperty("html_url", out var htmlEl))
+            return false;
+
+        string? htmlUrl = htmlEl.GetString();
+        return !string.IsNullOrWhiteSpace(htmlUrl) &&
+               Uri.TryCreate(htmlUrl, UriKind.Absolute, out releasePage);
+    }
+
+    private static bool TryFindPortableAssetUris(
+        JsonElement assets,
+        out Uri? zipUri,
+        out Uri? shaUri)
+    {
+        zipUri = null;
+        shaUri = null;
+
+        foreach (var asset in assets.EnumerateArray())
+        {
+            if (!asset.TryGetProperty("name", out var nameEl) ||
+                !asset.TryGetProperty("browser_download_url", out var urlEl))
+                continue;
+
+            string? name = nameEl.GetString();
+            string? url = urlEl.GetString();
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(url))
+                continue;
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var absolute))
+                continue;
+
+            if (string.Equals(name, PortableZipAssetName, StringComparison.Ordinal))
+                zipUri = absolute;
+            else if (string.Equals(name, PortableSha256AssetName, StringComparison.Ordinal))
+                shaUri = absolute;
+        }
+
+        return zipUri is not null;
     }
 
     /// <summary>
