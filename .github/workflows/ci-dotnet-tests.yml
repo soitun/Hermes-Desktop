@@ -125,6 +125,9 @@ jobs:
               "ArgumentNullException",
               "TimeoutException",
               "OperationCanceledException",
+              "MemoryStream",
+              "StreamContent",
+              "Version",
           }
 
           unresolved = sorted(

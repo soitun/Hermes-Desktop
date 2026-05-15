@@ -17,7 +17,16 @@ public static class McpBootstrap
         ILogger logger,
         CancellationToken ct = default)
     {
-        var existingConfigs = configPaths
+        ArgumentNullException.ThrowIfNull(manager);
+        ArgumentNullException.ThrowIfNull(configPaths);
+
+        // Snapshot the (raw, ordered) search path list onto the manager so the desktop's
+        // McpPage dashboard can show *exactly* what bootstrap inspected — never a list it
+        // rebuilt with a potentially-different projectDir.
+        var configPathList = configPaths as IReadOnlyList<string> ?? configPaths.ToList();
+        manager.RecordBootstrapConfigSearchPaths(configPathList);
+
+        var existingConfigs = configPathList
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(Path.GetFullPath)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -29,6 +38,8 @@ public static class McpBootstrap
             logger.LogInformation("No mcp.json found in configured search paths; MCP disabled.");
             return 0;
         }
+
+        manager.PrepareForBootstrapAttach();
 
         foreach (var configPath in existingConfigs)
         {
@@ -51,4 +62,14 @@ public static class McpBootstrap
 
         return manager.Tools.Count;
     }
+
+    /// <summary>Standard <c>mcp.json</c> search order (matches desktop bootstrap).</summary>
+    public static IReadOnlyList<string> BuildMcpConfigSearchPaths(string hermesProjectCsDir, string hermesHomePath) =>
+        new[]
+        {
+            Path.Combine(hermesProjectCsDir, "mcp.json"),
+            Path.Combine(hermesHomePath, "mcp.json"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Hermes", "mcp.json"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".hermes", "mcp.json"),
+        };
 }

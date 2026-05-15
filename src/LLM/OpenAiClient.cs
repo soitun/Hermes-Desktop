@@ -209,26 +209,50 @@ public sealed class OpenAiClient : IChatClient
             return (object)new { role = m.Role, content = m.Content };
         }).ToArray();
 
+        // stream_options.include_usage=true asks OpenAI-compatible servers to emit a
+        // final chunk containing real token counts. Required for the chat usage footer
+        // and InsightsService.RecordTokens. Most servers (OpenAI, OpenRouter, Groq,
+        // DeepSeek, vLLM, llama.cpp, LM Studio) honor it; Ollama silently ignores it.
         if (tools is not null)
         {
-            return new
+            return stream
+                ? new
+                {
+                    model = _config.Model,
+                    messages = msgs,
+                    tools,
+                    tool_choice = "auto",
+                    temperature = 0.7,
+                    stream = true,
+                    stream_options = new { include_usage = true }
+                }
+                : (object)new
+                {
+                    model = _config.Model,
+                    messages = msgs,
+                    tools,
+                    tool_choice = "auto",
+                    temperature = 0.7,
+                    stream = false
+                };
+        }
+
+        return stream
+            ? new
             {
                 model = _config.Model,
                 messages = msgs,
-                tools,
-                tool_choice = "auto",
                 temperature = 0.7,
-                stream
+                stream = true,
+                stream_options = new { include_usage = true }
+            }
+            : (object)new
+            {
+                model = _config.Model,
+                messages = msgs,
+                temperature = 0.7,
+                stream = false
             };
-        }
-
-        return new
-        {
-            model = _config.Model,
-            messages = msgs,
-            temperature = 0.7,
-            stream
-        };
     }
 
     private async Task<HttpResponseMessage> PostAsync(object payload, CancellationToken ct)
@@ -436,8 +460,8 @@ public sealed class OpenAiClient : IChatClient
         // Direct SSE parsing that handles both:
         // 1. <think>...</think> tags in content (QwQ, DeepSeek-R1 via Ollama)
         // 2. Separate "reasoning" JSON field (MiniMax-M2.7, etc.)
-        var inThinkBlock = false;
-        var contentBuffer = new StringBuilder();
+        var contentSplitter = new RedactedThinkingStreamSplitter();
+        UsageStats? finalUsage = null;
 
         var payload = BuildPayload(messages, tools: null, stream: true);
         var json = JsonSerializer.Serialize(payload);
@@ -515,114 +539,23 @@ public sealed class OpenAiClient : IChatClient
                 var parsedChunk = chunk!;
                 using (parsedChunk)
                 {
-                    if (!parsedChunk.RootElement.TryGetProperty("choices", out var choices) ||
-                        choices.GetArrayLength() == 0) continue;
+                    // The trailing usage chunk has `usage: {...}` and (for OpenAI) an
+                    // empty `choices: []`. Capture it before any choices check would skip it.
+                    OpenAiStreamChunkParser.TryCaptureUsage(parsedChunk.RootElement, ref finalUsage);
 
-                    var delta = choices[0].GetProperty("delta");
-
-                    // Extract reasoning field (MiniMax, DeepSeek-R1 JSON format)
-                    if (delta.TryGetProperty("reasoning", out var reasoningEl) &&
-                        reasoningEl.ValueKind == JsonValueKind.String)
+                    foreach (var streamEvent in OpenAiStreamChunkParser.ProjectChunk(
+                                 parsedChunk.RootElement, contentSplitter))
                     {
-                        var reasoning = reasoningEl.GetString();
-                        if (!string.IsNullOrEmpty(reasoning))
-                            yield return new StreamEvent.ThinkingDelta(reasoning);
-                    }
-
-                    // Extract content field
-                    if (delta.TryGetProperty("content", out var contentEl) &&
-                        contentEl.ValueKind == JsonValueKind.String)
-                    {
-                        var token = contentEl.GetString();
-                        if (!string.IsNullOrEmpty(token))
-                        {
-                            // Handle <think>...</think> tags within content
-                            contentBuffer.Append(token);
-
-                            while (contentBuffer.Length > 0)
-                            {
-                                var text = contentBuffer.ToString();
-
-                                if (!inThinkBlock)
-                                {
-                                    var openIdx = text.IndexOf("<think>");
-                                    if (openIdx >= 0)
-                                    {
-                                        if (openIdx > 0)
-                                            yield return new StreamEvent.TokenDelta(text[..openIdx]);
-                                        inThinkBlock = true;
-                                        contentBuffer.Clear();
-                                        contentBuffer.Append(text[(openIdx + "<think>".Length)..]);
-                                        continue;
-                                    }
-
-                                    // Check for partial <think> tag at end
-                                    if (text.Length > 0 && (text[^1] == '<' || text.EndsWith("<t") ||
-                                        text.EndsWith("<th") || text.EndsWith("<thi") ||
-                                        text.EndsWith("<thin") || text.EndsWith("<think")))
-                                    {
-                                        var ps = text.LastIndexOf('<');
-                                        if (ps >= 0 && ps < text.Length)
-                                        {
-                                            if (ps > 0) yield return new StreamEvent.TokenDelta(text[..ps]);
-                                            contentBuffer.Clear();
-                                            contentBuffer.Append(text[ps..]);
-                                            break;
-                                        }
-                                    }
-
-                                    yield return new StreamEvent.TokenDelta(text);
-                                    contentBuffer.Clear();
-                                }
-                                else
-                                {
-                                    var closeIdx = text.IndexOf("</think>");
-                                    if (closeIdx >= 0)
-                                    {
-                                        if (closeIdx > 0)
-                                            yield return new StreamEvent.ThinkingDelta(text[..closeIdx]);
-                                        inThinkBlock = false;
-                                        contentBuffer.Clear();
-                                        contentBuffer.Append(text[(closeIdx + "</think>".Length)..]);
-                                        continue;
-                                    }
-
-                                    if (text.EndsWith("<") || text.EndsWith("</") || text.EndsWith("</t") ||
-                                        text.EndsWith("</th") || text.EndsWith("</thi") ||
-                                        text.EndsWith("</thin") || text.EndsWith("</think"))
-                                    {
-                                        var ps = text.LastIndexOf('<');
-                                        if (ps > 0)
-                                        {
-                                            yield return new StreamEvent.ThinkingDelta(text[..ps]);
-                                            contentBuffer.Clear();
-                                            contentBuffer.Append(text[ps..]);
-                                            break;
-                                        }
-                                        break;
-                                    }
-
-                                    yield return new StreamEvent.ThinkingDelta(text);
-                                    contentBuffer.Clear();
-                                }
-
-                                break;
-                            }
-                        }
+                        yield return streamEvent;
                     }
                 }
             }
         }
 
-        // Flush remaining content buffer
-        if (contentBuffer.Length > 0)
-        {
-            var remaining = contentBuffer.ToString();
-            yield return inThinkBlock
-                ? new StreamEvent.ThinkingDelta(remaining)
-                : new StreamEvent.TokenDelta(remaining);
-        }
+        var remainder = contentSplitter.FlushRemainder();
+        if (remainder is not null)
+            yield return remainder;
 
-        yield return new StreamEvent.MessageComplete("stop", new UsageStats(0, 0));
+        yield return new StreamEvent.MessageComplete("stop", finalUsage ?? new UsageStats(0, 0));
     }
 }

@@ -6,9 +6,7 @@
 
 A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
-**v2.5.7** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
-
-**Latest dogfood fix:** Buddy has been rebuilt from the old ASCII placeholder into a local WinUI vector companion with live character crafting. Pick species, palette, eyes, and accessory before hatch, adjust the look later, and keep the same saved rarity, stats, identity, name, and personality across sessions.
+**v2.5.8** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
 ---
 
@@ -234,6 +232,7 @@ Hermes.CS/
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v2.5.8** | 2026-05-14 | **Bundle E port from Electron (Tier-1 desktop UX):** streaming Tool/Usage event primitives, slash command palette (10 local + 5 agent-bound, en/zh), token-usage chat footer wired to `InsightsService`, Winget submission flow (`Directory.Build.props` identity + template manifests + `Generate-WingetManifests.ps1` + CI `generate_winget` job + winget-install self-detection in `UpdateService`), MemoryPage CRUD bound to `MemoryManager`, Skills toggle persistence + `SkillsHub` install UI + quarantine surface, `SavedModelProfile`/`SavedModelStore` registry with set-active in Settings, WelcomePage/SetupPage first-run wizard routed via `SoulService.IsFirstRun`. Builds on v2.5.6's reference-runtime backend (planning tool, command registry, streaming accumulator, durable timeline). **Pre-E branch wrap:** MCP host page + remote endpoint validator, Diagnostics page + report builder, in-app portable update banner with SHA-256 verification, `publish-portable.ps1` emits `.sha256` manifests. MIT attribution to `fathah/hermes-desktop` for the Electron source concepts that inspired the port. Assembly / MSIX manifest **2.5.8.0**. |
 | **v2.5.7** | 2026-05-09 | **Buddy companion redesign:** replaced the ASCII Buddy page and side panel with a local WinUI vector avatar, added live character crafting for species, palette, eyes, and accessory, persisted crafted visual traits without rerolling stats, and documented the open-source art research behind the direction. **Tests:** Buddy crafting persistence coverage added. Assembly / MSIX manifest **2.5.7.0**. |
 | **v2.5.6** | 2026-05-09 | **Reference-runtime improvements:** planning tool, command registry, streaming accumulator, structured runtime events, browser state reporting, large output routing with secret redaction, post-edit diagnostics, and durable timeline/tool lifecycle records. **MCP:** `mcp.json` now accepts standard camelCase `mcpServers` keys via case-insensitive config deserialization. **Tests:** timeline, planning, browser state, MCP casing, diagnostics, command registry, and large-output regression coverage. Assembly / MSIX manifest **2.5.6.0**. |
 | **v2.5.5** | 2026-05-06 | **Stream resilience (issue #51):** mid-SSE `HttpRequestException` now retries against the configured fallback provider, gated to the SSE-handshake case (zero tokens emitted) and to turns currently on the primary client &mdash; avoids prompt-replay duplication and the "already on fallback" rethrow. **Chat input:** placeholder text now states the actual binding (`Enter` to send, `Shift+Enter` for a new line); the wrong-key resource lying about Ctrl+Enter is gone. **CI:** test-symbol guardrail allowlist extended with common BCL exception types so future tests don't trip on `HttpRequestException`/`NotImplementedException`/`Argument*`/`Timeout`. Assembly / MSIX manifest **2.5.5.0**. |
@@ -273,6 +272,8 @@ Hermes.CS/
 ## Acknowledgments
 
 Built on the [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent) architecture. This project exists to show appreciation for the NousResearch team &mdash; please support them and use the product they created.
+
+Several Tier-1 and Tier-2 surfaces (streaming chat primitives, slash command palette, token-usage footer, Winget release flow, MemoryPage editor, skills install/toggle UI, saved-model registry, Welcome/Setup wizard) were inspired by the MIT-licensed Electron/React Hermes Desktop at <https://github.com/fathah/hermes-desktop>. We ported concepts and UX, not source. Full attribution lives in [`docs/credits.md`](docs/credits.md).
 
 ## License
 
