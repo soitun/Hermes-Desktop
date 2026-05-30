@@ -257,8 +257,9 @@ type: {type}
     /// <summary>
     /// Delete a memory file.
     /// </summary>
-    public async Task DeleteMemoryAsync(string filename, CancellationToken ct)
+    public Task DeleteMemoryAsync(string filename, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         var path = Path.Combine(_memoryDir, filename);
         
         if (File.Exists(path))
@@ -266,6 +267,7 @@ type: {type}
             File.Delete(path);
             _logger.LogInformation("Deleted memory: {Filename}", filename);
         }
+        return Task.CompletedTask;
     }
     
     /// <summary>

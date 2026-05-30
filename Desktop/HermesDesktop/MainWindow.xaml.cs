@@ -72,7 +72,7 @@ public sealed partial class MainWindow : Window
             NavigateToTag("chat");
         }
 
-        ScheduleDeferredUpdateCheck();
+        _ = ScheduleDeferredUpdateCheckAsync();
     }
 
     private bool TryRouteFirstRun()
@@ -136,7 +136,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void ScheduleDeferredUpdateCheck()
+    private async Task ScheduleDeferredUpdateCheckAsync()
     {
         try
         {
@@ -166,6 +166,7 @@ public sealed partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
+            // Deferred update check was canceled during shutdown.
         }
         catch
         {
@@ -216,9 +217,24 @@ public sealed partial class MainWindow : Window
 
     internal void NavigateToTag(string tag)
     {
+        var navItem = FindNavigationItemByTag(tag);
+        if (navItem is not null && !ReferenceEquals(ShellNavigation.SelectedItem, navItem))
+            ShellNavigation.SelectedItem = navItem;
+
         if (PageMap.TryGetValue(tag, out System.Type? pageType) && ContentFrame.CurrentSourcePageType != pageType)
         {
             ContentFrame.Navigate(pageType);
         }
+    }
+
+    private NavigationViewItem? FindNavigationItemByTag(string tag)
+    {
+        foreach (var item in ShellNavigation.MenuItems.OfType<NavigationViewItem>())
+        {
+            if (string.Equals(item.Tag as string, tag, StringComparison.OrdinalIgnoreCase))
+                return item;
+        }
+
+        return null;
     }
 }

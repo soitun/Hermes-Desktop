@@ -9,7 +9,7 @@ sources: [hermes-agent-repo/]
 
 # Upstream Gap Analysis
 
-Comparison of Hermes.CS (C#) with NousResearch/hermes-agent (Python upstream).
+Comparison of Hermes Desktop (C#) with NousResearch/hermes-agent (Python upstream).
 
 ## Ported and Functional
 
@@ -60,7 +60,7 @@ Comparison of Hermes.CS (C#) with NousResearch/hermes-agent (Python upstream).
 
 ## Architecture Differences
 
-The Python upstream is a CLI-first agent. Hermes.CS adds:
+The Python upstream is a CLI-first agent. Hermes Desktop adds:
 - **Desktop shell** -- WinUI 3 with ChatPage, AgentPage, SettingsPage, MemoryPage, SkillsPage
 - **Panel system** -- AgentPanel, BuddyPanel, MemoryPanel, SessionPanel, SkillsPanel, TaskPanel
 - **Session recording** -- SessionRecorder for replay

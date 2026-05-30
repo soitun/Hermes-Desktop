@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 /// <summary>
 /// Scans text for API keys, tokens, passwords, and other secrets.
-/// Matches the patterns from the official Hermes Agent redact.py.
+/// Matches the patterns from the upstream Python redact.py.
 /// </summary>
 public static class SecretScanner
 {

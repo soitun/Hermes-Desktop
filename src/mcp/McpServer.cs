@@ -43,7 +43,7 @@ public sealed class McpServer : IAsyncDisposable
     public int Port { get; private set; }
 
     /// <summary>Start the MCP server on the specified port.</summary>
-    public async Task StartAsync(int port = 3100, CancellationToken ct = default)
+    public Task StartAsync(int port = 3100, CancellationToken ct = default)
     {
         Port = port;
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -57,6 +57,7 @@ public sealed class McpServer : IAsyncDisposable
             port, _tools.Count, _authToken![..8] + "...");
 
         _ = Task.Run(() => ListenLoopAsync(_cts.Token), _cts.Token);
+        return Task.CompletedTask;
     }
 
     private async Task ListenLoopAsync(CancellationToken ct)

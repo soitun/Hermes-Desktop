@@ -6,7 +6,7 @@
 
 A **Windows-native AI agent** that lives on your desktop. Chat with it, give it tools, let it learn who you are. Built with WinUI 3 and .NET 10.
 
-**v2.5.8** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
+**v2.5.9** &mdash; [Download](https://github.com/RedWoodOG/Hermes-Desktop/releases/latest) | [Changelog](#changelog) | [Discussion](https://github.com/RedWoodOG/Hermes-Desktop/discussions/10)
 
 ---
 
@@ -204,7 +204,7 @@ Start-Process "shell:AppsFolder\EDC29F63-281C-4D34-8723-155C8122DEA2_1z32rh13vfr
 ## Project Structure
 
 ```
-Hermes.CS/
+Hermes-Desktop/
 ├── src/                         # Core agent library (Hermes.Core)
 │   ├── Core/                    #   Agent loop, models, tool interfaces
 │   ├── Tools/                   #   27+ tool implementations
@@ -232,6 +232,7 @@ Hermes.CS/
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v2.5.9** | 2026-05-30 | **Release hardening and wiring verification:** refreshed the Chat welcome block for Hermes Desktop, completed the Chat/Skills wiring map, wired chat Stop state and panel automation names, verified Sessions clear/delete/new-session flows, fixed Skills Hub install resolution for raw `SKILL.md`, GitHub blob URLs, and repo paths, preserved installed-skill frontmatter metadata, and added focused SkillsHub coverage. **Release hygiene:** audited release-facing files for local user paths/session leftovers, removed a machine-specific session-title fixture from tests, aligned alternate MSIX publisher metadata with the repo package publisher, and updated README/winget/release notes. **Verification:** CodeGraph index current, `scripts/code-quality.ps1` passed with 750 tests, and the WinUI app was launched and verified with a real streamed response. Assembly / MSIX manifest **2.5.9.0**. |
 | **v2.5.8** | 2026-05-14 | **Bundle E port from Electron (Tier-1 desktop UX):** streaming Tool/Usage event primitives, slash command palette (10 local + 5 agent-bound, en/zh), token-usage chat footer wired to `InsightsService`, Winget submission flow (`Directory.Build.props` identity + template manifests + `Generate-WingetManifests.ps1` + CI `generate_winget` job + winget-install self-detection in `UpdateService`), MemoryPage CRUD bound to `MemoryManager`, Skills toggle persistence + `SkillsHub` install UI + quarantine surface, `SavedModelProfile`/`SavedModelStore` registry with set-active in Settings, WelcomePage/SetupPage first-run wizard routed via `SoulService.IsFirstRun`. Builds on v2.5.6's reference-runtime backend (planning tool, command registry, streaming accumulator, durable timeline). **Pre-E branch wrap:** MCP host page + remote endpoint validator, Diagnostics page + report builder, in-app portable update banner with SHA-256 verification, `publish-portable.ps1` emits `.sha256` manifests. MIT attribution to `fathah/hermes-desktop` for the Electron source concepts that inspired the port. Assembly / MSIX manifest **2.5.8.0**. |
 | **v2.5.7** | 2026-05-09 | **Buddy companion redesign:** replaced the ASCII Buddy page and side panel with a local WinUI vector avatar, added live character crafting for species, palette, eyes, and accessory, persisted crafted visual traits without rerolling stats, and documented the open-source art research behind the direction. **Tests:** Buddy crafting persistence coverage added. Assembly / MSIX manifest **2.5.7.0**. |
 | **v2.5.6** | 2026-05-09 | **Reference-runtime improvements:** planning tool, command registry, streaming accumulator, structured runtime events, browser state reporting, large output routing with secret redaction, post-edit diagnostics, and durable timeline/tool lifecycle records. **MCP:** `mcp.json` now accepts standard camelCase `mcpServers` keys via case-insensitive config deserialization. **Tests:** timeline, planning, browser state, MCP casing, diagnostics, command registry, and large-output regression coverage. Assembly / MSIX manifest **2.5.6.0**. |

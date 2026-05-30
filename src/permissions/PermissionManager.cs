@@ -116,18 +116,19 @@ public sealed class PermissionManager
     /// Check permissions for a tool call.
     /// Returns Allow, Ask, or Deny decision.
     /// </summary>
-    public async Task<PermissionDecision> CheckPermissionsAsync<T>(
+    public Task<PermissionDecision> CheckPermissionsAsync<T>(
         string toolName,
         T input,
         CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         _logger.LogDebug("Checking permissions for {ToolName}", toolName);
         
         // 1. Check mode
         if (_context.Mode == PermissionMode.BypassPermissions)
         {
             _logger.LogDebug("Bypass mode: allowing {ToolName}", toolName);
-            return Allow(input);
+            return Task.FromResult(Allow(input));
         }
         
         if (_context.Mode == PermissionMode.Plan)
@@ -135,12 +136,12 @@ public sealed class PermissionManager
             if (IsReadOnlyTool(toolName, input))
             {
                 _logger.LogDebug("Plan mode: allowing read-only {ToolName}", toolName);
-                return Allow(input);
+                return Task.FromResult(Allow(input));
             }
             else
             {
                 _logger.LogDebug("Plan mode: denying write operation {ToolName}", toolName);
-                return Deny($"Cannot modify files in plan mode");
+                return Task.FromResult(Deny($"Cannot modify files in plan mode"));
             }
         }
         
@@ -160,21 +161,21 @@ public sealed class PermissionManager
         if (MatchesRule(toolName, input, alwaysAllowRules))
         {
             _logger.LogDebug("Matched always_allow rule for {ToolName}", toolName);
-            return Allow(input);
+            return Task.FromResult(Allow(input));
         }
         
         // 3. Check always_deny rules
         if (MatchesRule(toolName, input, alwaysDenyRules))
         {
             _logger.LogDebug("Matched always_deny rule for {ToolName}", toolName);
-            return Deny($"Blocked by permission rule");
+            return Task.FromResult(Deny($"Blocked by permission rule"));
         }
         
         // 4. Check always_ask rules
         if (MatchesRule(toolName, input, alwaysAskRules))
         {
             _logger.LogDebug("Matched always_ask rule for {ToolName}", toolName);
-            return Ask($"Requires permission: {toolName}");
+            return Task.FromResult(Ask($"Requires permission: {toolName}"));
         }
         
         // 5. Default behavior by mode
@@ -194,7 +195,7 @@ public sealed class PermissionManager
         };
         
         _logger.LogDebug("Permission decision for {ToolName}: {Decision}", toolName, decision.Behavior);
-        return decision;
+        return Task.FromResult(decision);
     }
     
     private static bool MatchesRule<T>(string toolName, T input, IReadOnlyCollection<PermissionRule> rules)

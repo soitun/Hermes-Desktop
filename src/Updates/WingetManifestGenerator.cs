@@ -84,8 +84,8 @@ public static class WingetManifestGenerator
 
     /// <summary>
     /// Computes the <c>microsoft/winget-pkgs</c> directory layout for a given package and version.
-    /// For <c>VyreVaultStudios.HermesDesktop</c>+<c>2.5.4</c> this returns
-    /// <c>manifests/v/VyreVaultStudios/HermesDesktop/2.5.4</c>.
+    /// For <c>VyreVaultStudios.HermesDesktop</c>+<c>2.5.9</c> this returns
+    /// <c>manifests/v/VyreVaultStudios/HermesDesktop/2.5.9</c>.
     /// </summary>
     public static string GetRelativeManifestPath(string packageIdentifier, string version)
     {

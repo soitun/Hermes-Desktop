@@ -105,9 +105,9 @@ public static class Mulberry32
     /// </summary>
     public static Func<double> Create(string userId, string salt = "friend-2026-401")
     {
-        var hash = MD5.HashData(Encoding.UTF8.GetBytes(userId + salt));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(userId + salt));
         var seed = BitConverter.ToUInt32(hash, 0);
-        
+
         return () =>
         {
             seed |= 0;

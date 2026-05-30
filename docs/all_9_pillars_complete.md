@@ -82,7 +82,7 @@
 ## 📁 Complete File Structure
 
 ```
-Hermes.CS/src/
+Hermes-Desktop/src/
 ├── Core/
 │   ├── Agent.cs            ✅
 │   ├── Models.cs           ✅
@@ -137,7 +137,7 @@ Hermes.CS/src/
 
 ---
 
-## 🏆 What Makes Hermes.C# Different
+## What Makes Hermes Desktop Different
 
 ### Other Agents (Cursor, Copilot, Aider)
 - ❌ Forget everything after session ends
@@ -146,7 +146,7 @@ Hermes.CS/src/
 - ❌ Binary permissions (allow/deny)
 - ❌ No personality
 
-### Hermes.C#
+### Hermes Desktop
 - ✅ **Remembers you** (Persistent Memory)
 - ✅ **Works while you sleep** (Dream System)
 - ✅ **Coordinates teams** (Agent Teams with mailboxes)
@@ -262,7 +262,7 @@ var decision = await permissionManager.CheckPermissionsAsync(...);
 ## 🎮 Try It
 
 ```bash
-cd Hermes.CS\src
+cd Hermes-Desktop\src
 
 # Build
 dotnet build

@@ -11,35 +11,39 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
             <!-- Force light text in dark theme for all controls -->
-            <SolidColorBrush x:Key="AppTextPrimaryBrush" Color="#ECECEC" />
-            <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#0F1318" />
-            <SolidColorBrush x:Key="AppPaneBackgroundBrush" Color="#141920" />
-            <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1B2129" />
-            <SolidColorBrush x:Key="AppInsetBrush" Color="#11161C" />
-            <SolidColorBrush x:Key="AppPanelBrush" Color="#202731" />
-            <SolidColorBrush x:Key="AppStrokeBrush" Color="#2A313C" />
-            <SolidColorBrush x:Key="AppSubtleStrokeBrush" Color="#202731" />
+            <SolidColorBrush x:Key="AppTransparentBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="AppTextPrimaryBrush" Color="#F4F1E8" />
+            <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#101214" />
+            <SolidColorBrush x:Key="AppPaneBackgroundBrush" Color="#15191E" />
+            <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1B2027" />
+            <SolidColorBrush x:Key="AppInsetBrush" Color="#0D1116" />
+            <SolidColorBrush x:Key="AppComposerBrush" Color="#111820" />
+            <SolidColorBrush x:Key="AppPanelBrush" Color="#202833" />
+            <SolidColorBrush x:Key="AppSelectedSurfaceBrush" Color="#2A2417" />
+            <SolidColorBrush x:Key="AppHoverSurfaceBrush" Color="#222A33" />
+            <SolidColorBrush x:Key="AppStrokeBrush" Color="#303845" />
+            <SolidColorBrush x:Key="AppSubtleStrokeBrush" Color="#252D38" />
             <!-- Hermes gradient palette: caramel → goldenrod → golden yellow -->
-            <SolidColorBrush x:Key="AppAccentBrush" Color="#D4A017" />
-            <SolidColorBrush x:Key="AppAccentTextBrush" Color="#FFD700" />
-            <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="#95A2B1" />
+            <SolidColorBrush x:Key="AppAccentBrush" Color="#E4B34A" />
+            <SolidColorBrush x:Key="AppAccentTextBrush" Color="#F6C95E" />
+            <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="#A5AFBC" />
             <LinearGradientBrush x:Key="AppUserBubbleBrush" StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="#1E1A0A" Offset="0.0" />
                 <GradientStop Color="#2A2210" Offset="0.5" />
                 <GradientStop Color="#332A0F" Offset="1.0" />
             </LinearGradientBrush>
-            <SolidColorBrush x:Key="AppHeroAccentBrush" Color="#FFD700" />
-            <SolidColorBrush x:Key="AppAccentDarkBrush" Color="#C68E17" />
-            <SolidColorBrush x:Key="AppOutlineBrush" Color="#3A3A00" />
+            <SolidColorBrush x:Key="AppHeroAccentBrush" Color="#F6C95E" />
+            <SolidColorBrush x:Key="AppAccentDarkBrush" Color="#B98523" />
+            <SolidColorBrush x:Key="AppOutlineBrush" Color="#5C4C22" />
             <LinearGradientBrush x:Key="AppAccentGradientBrush" StartPoint="0,0" EndPoint="1,0">
-                <GradientStop Color="#C68E17" Offset="0.0" />
-                <GradientStop Color="#D4A017" Offset="0.5" />
-                <GradientStop Color="#FFD700" Offset="1.0" />
+                <GradientStop Color="#B98523" Offset="0.0" />
+                <GradientStop Color="#E4B34A" Offset="0.55" />
+                <GradientStop Color="#F6C95E" Offset="1.0" />
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="AppAccentGradientVerticalBrush" StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#FFD700" Offset="0.0" />
-                <GradientStop Color="#D4A017" Offset="0.5" />
-                <GradientStop Color="#C68E17" Offset="1.0" />
+                <GradientStop Color="#F6C95E" Offset="0.0" />
+                <GradientStop Color="#E4B34A" Offset="0.5" />
+                <GradientStop Color="#B98523" Offset="1.0" />
             </LinearGradientBrush>
             <SolidColorBrush x:Key="ConnectionOnlineBrush" Color="#49C27D" />
             <SolidColorBrush x:Key="ConnectionOfflineBrush" Color="#FF8A65" />
@@ -152,13 +156,45 @@
                 <Setter Property="CornerRadius" Value="6" />
                 <Setter Property="UseSystemFocusVisuals" Value="True" />
             </Style>
+            <Style x:Key="ComposerTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{StaticResource AppTextPrimaryBrush}" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="36" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+            </Style>
+            <Style x:Key="IconButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppSubtleStrokeBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{StaticResource AppTextSecondaryBrush}" />
+                <Setter Property="MinWidth" Value="32" />
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="Padding" Value="8" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+            </Style>
+            <Style x:Key="PanelTabButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{StaticResource AppTransparentBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppSubtleStrokeBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{StaticResource AppTextSecondaryBrush}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="26" />
+                <Setter Property="Padding" Value="9,4" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+            </Style>
 
             <Style x:Key="SurfaceCardStyle" TargetType="Border">
                 <Setter Property="Background" Value="{StaticResource AppSurfaceBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource AppSubtleStrokeBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="12" />
-                <Setter Property="Padding" Value="18" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="16" />
             </Style>
             <!-- Subtle ambient gradient — used as ThinkingIndicator backdrop and other "alive" surfaces. -->
             <LinearGradientBrush x:Key="AppAmbientAccentBrush" StartPoint="0,0" EndPoint="1,0">
@@ -171,7 +207,7 @@
                 <Setter Property="Background" Value="{StaticResource AppInsetBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource AppStrokeBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="CornerRadius" Value="8" />
                 <Setter Property="Padding" Value="14" />
             </Style>
             <Style x:Key="PageEyebrowTextStyle" TargetType="TextBlock">

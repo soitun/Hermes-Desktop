@@ -421,7 +421,7 @@ public class BuddyPanelGetRarityColorTests
     [TestMethod]
     public void GetRarityColor_CaseInsensitive_LegendaryUppercase()
     {
-        var (a, r, g, b) = GetRarityArgb("LEGENDARY");
+        var (a, r, _, _) = GetRarityArgb("LEGENDARY");
         Assert.AreEqual(255, a);
         Assert.AreEqual(255, r); // Golden
     }
@@ -690,6 +690,69 @@ public class SessionListItemTests
     }
 
     // Helper model (mirrors SessionListItem shape without WinUI dependency)
+    private sealed class SessionListItemModel
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string TimeAgo { get; set; } = "";
+        public string MessageCount { get; set; } = "";
+    }
+}
+
+[TestClass]
+public class SessionSearchFilterTests
+{
+    // Mirrors the search filter logic in SessionPanel.SessionMatchesFilter
+    private static IEnumerable<SessionListItemModel> FilterSessions(IEnumerable<SessionListItemModel> sessions, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return sessions;
+        return sessions.Where(session =>
+            session.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            session.TimeAgo.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            session.MessageCount.Contains(query, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static List<SessionListItemModel> MakeSessions() =>
+    [
+        new() { Id = "a", Title = "Who are you?", TimeAgo = "Apr 7", MessageCount = "2 msgs" },
+        new() { Id = "b", Title = "Read workspace notes", TimeAgo = "Apr 9", MessageCount = "20 msgs" },
+        new() { Id = "c", Title = "Hello model", TimeAgo = "just now", MessageCount = "1 msg" },
+    ];
+
+    [TestMethod]
+    public void Filter_EmptyQuery_ReturnsAllSessions()
+    {
+        var result = FilterSessions(MakeSessions(), "").ToList();
+
+        Assert.AreEqual(3, result.Count);
+    }
+
+    [TestMethod]
+    public void Filter_MatchingTitle_ReturnsMatchingSession()
+    {
+        var result = FilterSessions(MakeSessions(), "workspace").ToList();
+
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual("b", result[0].Id);
+    }
+
+    [TestMethod]
+    public void Filter_MatchingMetadata_ReturnsMatchingSession()
+    {
+        var result = FilterSessions(MakeSessions(), "20 msgs").ToList();
+
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual("b", result[0].Id);
+    }
+
+    [TestMethod]
+    public void Filter_NoMatch_ReturnsEmptySessionList()
+    {
+        var result = FilterSessions(MakeSessions(), "not-present").ToList();
+
+        Assert.AreEqual(0, result.Count);
+    }
+
     private sealed class SessionListItemModel
     {
         public string Id { get; set; } = "";

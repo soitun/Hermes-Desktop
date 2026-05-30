@@ -16,8 +16,6 @@ namespace HermesDesktop.Services;
 internal sealed class SessionRecorder
 {
     private string? _recordingDir;
-    private string? _sessionId;
-
     /// <summary>Whether recording is currently active.</summary>
     public bool IsRecording { get; private set; }
 
@@ -26,7 +24,6 @@ internal sealed class SessionRecorder
     /// </summary>
     public void StartRecording(string sessionId)
     {
-        _sessionId = sessionId;
         _recordingDir = Path.Combine(HermesEnvironment.HermesHomePath, "recordings", sessionId);
         Directory.CreateDirectory(_recordingDir);
         IsRecording = true;

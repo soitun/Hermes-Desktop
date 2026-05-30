@@ -210,8 +210,9 @@ public sealed class SkillManager
     /// <see cref="SkillDisabledException"/> when the user has toggled it off so
     /// slash-command fallbacks and tool dispatch cannot bypass the toggle.
     /// </summary>
-    public async Task<string> InvokeSkillAsync(string skillName, string userQuery, CancellationToken ct)
+    public Task<string> InvokeSkillAsync(string skillName, string userQuery, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         if (!_skills.TryGetValue(skillName, out var skill))
         {
             throw new SkillNotFoundException(skillName);
@@ -240,7 +241,7 @@ public sealed class SkillManager
 {userQuery}
 ";
         
-        return context;
+        return Task.FromResult(context);
     }
     
     // ── Validation constants (upstream: skill_manager_tool.py) ──
@@ -438,8 +439,9 @@ public sealed class SkillManager
     /// <summary>
     /// Delete a skill.
     /// </summary>
-    public async Task DeleteSkillAsync(string name, CancellationToken ct)
+    public Task DeleteSkillAsync(string name, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         if (!_skills.TryGetValue(name, out var skill))
         {
             throw new SkillNotFoundException(name);
@@ -453,6 +455,7 @@ public sealed class SkillManager
         _skills.TryRemove(name, out _);
         
         _logger.LogInformation("Deleted skill: {Name}", name);
+        return Task.CompletedTask;
     }
 }
 

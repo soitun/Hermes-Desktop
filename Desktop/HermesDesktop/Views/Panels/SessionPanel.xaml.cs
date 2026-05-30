@@ -20,20 +20,23 @@ public sealed class SessionListItem
 public sealed partial class SessionPanel : UserControl
 {
     private readonly TranscriptStore _transcriptStore;
+    private readonly ObservableCollection<SessionListItem> _allSessions = new();
 
     public ObservableCollection<SessionListItem> Sessions { get; } = new();
     public event Action<string>? SessionSelected;
+    public event Action? SessionsCleared;
 
     public SessionPanel()
     {
         InitializeComponent();
         _transcriptStore = App.Services.GetRequiredService<TranscriptStore>();
+        SessionList.ItemsSource = Sessions;
         Loaded += async (_, _) => await RefreshAsync();
     }
 
     public async System.Threading.Tasks.Task RefreshAsync()
     {
-        Sessions.Clear();
+        _allSessions.Clear();
         var ids = _transcriptStore.GetAllSessionIds();
 
         foreach (var id in ids.OrderByDescending(i => i))
@@ -49,7 +52,7 @@ public sealed partial class SessionPanel : UserControl
                 var last = messages.LastOrDefault();
                 var ago = last is not null ? FormatTimeAgo(last.Timestamp) : "";
 
-                Sessions.Add(new SessionListItem
+                _allSessions.Add(new SessionListItem
                 {
                     Id = id,
                     Title = title,
@@ -63,10 +66,7 @@ public sealed partial class SessionPanel : UserControl
             }
         }
 
-        SessionList.ItemsSource = Sessions;
-        EmptyState.Visibility = Sessions.Count == 0
-            ? Microsoft.UI.Xaml.Visibility.Visible
-            : Microsoft.UI.Xaml.Visibility.Collapsed;
+        ApplySessionFilter();
     }
 
     public event Action<string>? SessionDeleted;
@@ -78,20 +78,79 @@ public sealed partial class SessionPanel : UserControl
         if (sender is not Button btn || btn.Tag is not string sessionId) return;
 
         await _transcriptStore.DeleteSessionAsync(sessionId, CancellationToken.None);
+        var sourceItem = _allSessions.FirstOrDefault(s => s.Id == sessionId);
+        if (sourceItem is not null) _allSessions.Remove(sourceItem);
+
         var item = Sessions.FirstOrDefault(s => s.Id == sessionId);
         if (item is not null) Sessions.Remove(item);
 
-        EmptyState.Visibility = Sessions.Count == 0
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        UpdateEmptyState();
 
         SessionDeleted?.Invoke(sessionId);
     }
+
+    private async void ClearChats_Click(object sender, RoutedEventArgs e)
+    {
+        if (_allSessions.Count == 0) return;
+
+        var dialog = new ContentDialog
+        {
+            Title = "Clear all chats?",
+            Content = "This deletes every saved chat transcript and replay activity from this device.",
+            PrimaryButtonText = "Clear chats",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary)
+            return;
+
+        await _transcriptStore.DeleteAllSessionsAsync(CancellationToken.None);
+        _allSessions.Clear();
+        Sessions.Clear();
+        UpdateEmptyState();
+        SessionsCleared?.Invoke();
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplySessionFilter();
 
     private void SessionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (SessionList.SelectedItem is SessionListItem item)
             SessionSelected?.Invoke(item.Id);
+    }
+
+    private void ApplySessionFilter()
+    {
+        var query = SearchBox.Text?.Trim() ?? "";
+        Sessions.Clear();
+
+        foreach (var session in _allSessions.Where(session => SessionMatchesFilter(session, query)))
+            Sessions.Add(session);
+
+        UpdateEmptyState();
+    }
+
+    internal static bool SessionMatchesFilter(SessionListItem session, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return true;
+
+        return session.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               session.TimeAgo.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               session.MessageCount.Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void UpdateEmptyState()
+    {
+        ClearChatsBtn.IsEnabled = _allSessions.Count > 0;
+        EmptyState.Text = _allSessions.Count == 0
+            ? "No conversations yet.\nStart chatting to create your first session."
+            : "No sessions match your search.";
+        EmptyState.Visibility = Sessions.Count == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private static string FormatTimeAgo(DateTime timestamp)

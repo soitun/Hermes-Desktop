@@ -1,7 +1,7 @@
 namespace Hermes.Agent.Core;
 
 /// <summary>
-/// Default system prompt for the Hermes Agent.
+/// Default system prompt for Hermes Desktop.
 /// Modeled after Claude Code's approach: detailed tool usage guidance,
 /// coding best practices, and quality guardrails.
 /// </summary>

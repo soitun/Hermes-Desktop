@@ -1,8 +1,8 @@
-# Agent Architecture Deep Dive - Key Learnings for Hermes.C#
+# Agent Architecture Deep Dive - Key Learnings for Hermes Desktop
 
 **Source**: Reference architecture analysis
 **Date**: 2026-04-03
-**Purpose**: Capture critical implementation details for Hermes.C# tools
+**Purpose**: Capture critical implementation details for Hermes Desktop tools.
 
 ---
 
@@ -396,7 +396,7 @@ type ReadFileState = Map<string, { mtime: number; content: string }>
 
 ---
 
-## 🚀 Implementation Priorities for Hermes.C#
+## Implementation Priorities for Hermes Desktop
 
 ### Phase 1: Core Tools (DONE ✅)
 - [x] BashTool (with Windows console fix)
@@ -501,7 +501,7 @@ else if (elapsedMs > PROGRESS_THRESHOLD_MS)
 ## 🔒 Security Considerations
 
 ### Windows Sandbox
-The reference architecture originally had **no sandbox on Windows**. Hermes.C# now supports a Windows Sandbox backend and can still evaluate other Windows-native boundaries:
+The reference architecture originally had **no sandbox on Windows**. Hermes Desktop now supports a Windows Sandbox backend and can still evaluate other Windows-native boundaries:
 1. **Windows Sandbox** - Built-in local VM-backed sandbox using generated `.wsb` configs
 2. **Windows Job Objects** - Process isolation, resource limits
 3. **AppContainer** - Windows Store app sandboxing (complex)

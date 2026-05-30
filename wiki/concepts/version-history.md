@@ -9,7 +9,7 @@ sources: [readme.md]
 
 # Version History
 
-Hermes.CS is a C# port of NousResearch/hermes-agent (Python) with native Windows desktop extensions.
+Hermes Desktop is a C# port of NousResearch/hermes-agent (Python) with native Windows desktop extensions.
 
 ## v1.1.0 -- Foundation
 
@@ -96,6 +96,13 @@ Hermes.CS is a C# port of NousResearch/hermes-agent (Python) with native Windows
 - MCP host bootstrap: load `mcp.json`, connect servers, register discovered tools with native MCP input schemas
 - Added MCP docs and tests for schema-backed tools / argument passthrough
 - See `docs/releases/v2.5.1.md` and root `readme.md` changelog
+
+## Hermes Desktop v2.5.9 (2026-05-30)
+
+- Release hygiene pass: local-machine/session fixture cleanup and package metadata alignment
+- Chat and Skills wiring map documented with real runtime paths and verification targets
+- Skills Hub install path fixed for raw URLs, GitHub blob URLs, and repo paths
+- See `docs/releases/v2.5.9.md` and root `readme.md` changelog
 
 ## Hermes Desktop v2.5.7 (2026-05-09)
 

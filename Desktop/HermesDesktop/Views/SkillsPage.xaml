@@ -41,6 +41,7 @@
                 <TextBlock Text="Sort:" FontSize="12" Foreground="{StaticResource AppTextSecondaryBrush}"
                            VerticalAlignment="Center"/>
                 <ComboBox x:Name="SortSelector" SelectedIndex="0" SelectionChanged="SortSelector_SelectionChanged"
+                          AutomationProperties.Name="Sort skills"
                           FontSize="12" MinWidth="120"
                           Style="{StaticResource AppComboBoxStyle}">
                     <ComboBoxItem Content="Name (A-Z)" Tag="NameAsc"/>
@@ -57,6 +58,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <TextBox x:Name="SearchBox" PlaceholderText="&#xE721; Search skills by name, description, category, or tools..."
+                     AutomationProperties.Name="Search skills"
                      FontSize="13" Margin="0,0,0,10" TextChanged="SearchBox_TextChanged"
                      Style="{StaticResource AppTextBoxStyle}"/>
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
@@ -89,6 +91,7 @@
                                     <ToggleSwitch IsOn="{Binding IsEnabled, Mode=TwoWay}"
                                                   Toggled="SkillToggle_Toggled"
                                                   Tag="{Binding Name}"
+                                                  AutomationProperties.Name="{Binding Name}"
                                                   MinWidth="0" Width="44" OnContent="" OffContent=""
                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <StackPanel Grid.Column="1">
@@ -144,10 +147,12 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="InstallNameBox" PlaceholderText="skill-name" MinWidth="160"
+                                     AutomationProperties.Name="Skill name"
                                      Background="{StaticResource AppInsetBrush}"
                                      BorderBrush="{StaticResource AppStrokeBrush}"/>
                             <TextBox Grid.Column="1" x:Name="InstallUrlBox"
                                      PlaceholderText="https://raw.githubusercontent.com/owner/repo/main/SKILL.md"
+                                     AutomationProperties.Name="Skill source"
                                      Background="{StaticResource AppInsetBrush}"
                                      BorderBrush="{StaticResource AppStrokeBrush}"/>
                             <Button Grid.Column="2" x:Name="InstallButton" Content="Install"

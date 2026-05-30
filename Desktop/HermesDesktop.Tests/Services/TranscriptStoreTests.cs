@@ -266,6 +266,23 @@ public class TranscriptStoreTests
     // ── DeleteSessionAsync ──
 
     [TestMethod]
+    public async Task GetAllSessionIds_ExcludesActivityLogs()
+    {
+        var store = CreateStore();
+        await store.SaveMessageAsync("session-with-activity", new Message { Role = "user", Content = "hello" }, CancellationToken.None);
+        await store.SaveActivityAsync(
+            "session-with-activity",
+            new ActivityEntry { ToolName = "shell", Status = ActivityStatus.Success },
+            CancellationToken.None);
+
+        var ids = store.GetAllSessionIds();
+
+        Assert.AreEqual(1, ids.Count);
+        CollectionAssert.Contains(ids, "session-with-activity");
+        CollectionAssert.DoesNotContain(ids, "session-with-activity.activity");
+    }
+
+    [TestMethod]
     public async Task DeleteSessionAsync_RemovesFile_FromDisk()
     {
         var store = CreateStore();
@@ -300,6 +317,25 @@ public class TranscriptStoreTests
     }
 
     // ── ClearCache ──
+
+    [TestMethod]
+    public async Task DeleteAllSessionsAsync_RemovesTranscriptsAndActivityLogs()
+    {
+        var store = CreateStore();
+        await store.SaveMessageAsync("alpha", new Message { Role = "user", Content = "a" }, CancellationToken.None);
+        await store.SaveMessageAsync("beta", new Message { Role = "user", Content = "b" }, CancellationToken.None);
+        await store.SaveActivityAsync(
+            "alpha",
+            new ActivityEntry { ToolName = "shell", Status = ActivityStatus.Success },
+            CancellationToken.None);
+
+        await store.DeleteAllSessionsAsync(CancellationToken.None);
+
+        Assert.AreEqual(0, store.GetAllSessionIds().Count);
+        Assert.IsFalse(store.SessionExists("alpha"));
+        Assert.IsFalse(store.SessionExists("beta"));
+        Assert.AreEqual(0, Directory.GetFiles(_tempDir, "*.jsonl").Length);
+    }
 
     [TestMethod]
     public async Task ClearCache_KeepsDataOnDisk_ButEmptiesCache()

@@ -1,4 +1,4 @@
-# Hermes.C# Tools Implementation Status
+# Hermes Desktop Tools Implementation Status
 
 ## ✅ Implemented Tools (6/19)
 
@@ -141,7 +141,7 @@ ToolResult pattern provides clear success/failure semantics
 
 ## 📊 Comparison with Claw Code
 
-| Feature | Claw Code (Python/Rust) | Hermes.C# |
+| Feature | Claw Code (Python/Rust) | Hermes Desktop |
 |---------|------------------------|-----------|
 | **Languages** | Python 27%, Rust 73% | 100% C# |
 | **Tools** | 19 built-in | 6 implemented, 13 planned |

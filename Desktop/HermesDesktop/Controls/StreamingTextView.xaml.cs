@@ -66,7 +66,7 @@ public sealed partial class StreamingTextView : UserControl
 
         _isStreaming = true;
         CursorIndicator.Visibility = Visibility.Visible;
-        CursorAnimation(_cursorCts.Token);
+        _ = CursorAnimationAsync(_cursorCts.Token);
     }
 
     /// <summary>
@@ -101,7 +101,7 @@ public sealed partial class StreamingTextView : UserControl
         // This is simplified - real impl would measure text position
     }
     
-    private async void CursorAnimation(CancellationToken ct)
+    private async Task CursorAnimationAsync(CancellationToken ct)
     {
         try
         {

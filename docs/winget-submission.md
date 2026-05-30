@@ -68,10 +68,10 @@ If you need to regenerate manifests outside CI (e.g. for a re-submission):
 ```pwsh
 # Run from the repo root, after publishing a portable zip
 .\scripts\Generate-WingetManifests.ps1 `
-    -Version 2.5.4 `
-    -InstallerUrl "https://github.com/RedWoodOG/Hermes-Desktop/releases/download/v2.5.4/HermesDesktop-portable-x64.zip" `
+    -Version 2.5.9 `
+    -InstallerUrl "https://github.com/RedWoodOG/Hermes-Desktop/releases/download/v2.5.9/HermesDesktop-portable-x64.zip" `
     -InstallerPath ".\Desktop\HermesDesktop\bin\HermesDesktop-portable-x64.zip" `
-    -ReleaseNotesUrl "https://github.com/RedWoodOG/Hermes-Desktop/releases/tag/v2.5.4"
+    -ReleaseNotesUrl "https://github.com/RedWoodOG/Hermes-Desktop/releases/tag/v2.5.9"
 ```
 
 The script reads identity (publisher, license, moniker) from

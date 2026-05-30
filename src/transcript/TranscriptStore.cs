@@ -119,12 +119,35 @@ public sealed class TranscriptStore
     {
         var fromCache = _cache.Keys.ToList();
         var fromDisk = Directory.EnumerateFiles(_transcriptsDir, "*.jsonl")
+            .Where(f => !IsActivityPath(f))
             .Select(f => Path.GetFileNameWithoutExtension(f))
             .Where(id => !fromCache.Contains(id))
             .ToList();
         
         fromCache.AddRange(fromDisk);
         return fromCache;
+    }
+
+    /// <summary>
+    /// Delete every persisted transcript and activity log.
+    /// </summary>
+    public async Task DeleteAllSessionsAsync(CancellationToken ct)
+    {
+        await _writeLock.WaitAsync(ct);
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(_transcriptsDir, "*.jsonl"))
+            {
+                ct.ThrowIfCancellationRequested();
+                File.Delete(file);
+            }
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
+
+        _cache.Clear();
     }
     
     /// <summary>
@@ -219,6 +242,9 @@ public sealed class TranscriptStore
 
     private string GetActivityPath(string sessionId) =>
         Path.Combine(_transcriptsDir, $"{sessionId}.activity.jsonl");
+
+    private static bool IsActivityPath(string path) =>
+        Path.GetFileName(path).EndsWith(".activity.jsonl", StringComparison.OrdinalIgnoreCase);
     
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

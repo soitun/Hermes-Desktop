@@ -14,8 +14,8 @@ public sealed class ActivityDisplayItem : INotifyPropertyChanged
 {
     private ActivityStatus _status;
     private long _durationMs;
-    private string _outputSummary = "";
-    private string _outputFull = "";
+    private string _outputSummary;
+    private string _outputFull;
     private bool _isExpanded;
     private string? _diffPreview;
     private string? _screenshotPath;

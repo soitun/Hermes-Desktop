@@ -1,4 +1,4 @@
-# Hermes.C# - Complete Architecture Blueprint
+# Hermes Desktop - Complete Architecture Blueprint
 
 **Vision**: Build a **teammate**, not a tool. Persistent, proactive, coordinated, crash-proof.
 
@@ -32,7 +32,7 @@
 ## 📐 Project Structure (Final)
 
 ```
-Hermes.CS/
+Hermes-Desktop/
 ├── src/
 │   ├── Hermes.Agent.csproj          # Core library
 │   ├── Hermes.CLI.csproj            # CLI executable
@@ -149,7 +149,7 @@ Hermes.CS/
 │   ├── SESSION_MANAGEMENT.md        # ✅ Session/crash recovery
 │   └── KAIROS_AND_MULTIAGENT.md     # ✅ KAIROS + multi-agent
 │
-└── Hermes.CS.sln
+└── HermesDesktop.sln
 ```
 
 ---
@@ -921,7 +921,7 @@ public enum PermissionBehavior
 3. **Implement MemoryManager** - First differentiator
 4. **Implement AgentService** - Enable multi-agent
 
-Once these 4 are done, Hermes.C# will have capabilities matching modern agentic systems.
+Once these 4 are done, Hermes Desktop will have capabilities matching modern agentic systems.
 
 ---
 

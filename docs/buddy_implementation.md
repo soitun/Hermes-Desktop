@@ -195,7 +195,7 @@ Stats:
 4. **Differentiation** - No other agent has this
 
 **Cursor, Copilot, Aider**: Sterile tools  
-**Hermes.C#**: Has a companion with personality
+**Hermes Desktop**: Has a companion with personality
 
 ---
 
@@ -209,4 +209,4 @@ Stats:
 
 ---
 
-**Buddy is the heart of Hermes.C#. Don't skip it.**
+**Buddy is the heart of Hermes Desktop. Don't skip it.**

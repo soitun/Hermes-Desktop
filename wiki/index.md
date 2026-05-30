@@ -1,5 +1,5 @@
 ---
-title: Hermes.CS Wiki Index
+title: Hermes Desktop Wiki Index
 type: meta
 tags: [index]
 created: 2026-04-09
@@ -7,9 +7,9 @@ updated: 2026-04-09
 sources: []
 ---
 
-# Hermes.CS Wiki
+# Hermes Desktop Wiki
 
-Comprehensive reference for the Hermes.CS codebase -- a native Windows AI agent ported from NousResearch/hermes-agent (Python) with WinUI 3 desktop shell.
+Comprehensive reference for the Hermes Desktop codebase -- a native Windows AI agent ported from NousResearch/hermes-agent (Python) with WinUI 3 desktop shell.
 
 ## Systems
 

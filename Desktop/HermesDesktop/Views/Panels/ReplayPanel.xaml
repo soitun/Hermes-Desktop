@@ -10,6 +10,7 @@
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
             <TextBlock Text="Activity" Style="{StaticResource SectionTitleTextStyle}"/>
             <ToggleButton x:Name="RecordToggle" Click="RecordToggle_Click"
+                          AutomationProperties.Name="Record activity"
                           Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}"
                           CornerRadius="6" Padding="8,4" MinWidth="0" FontSize="11">
                 <StackPanel Orientation="Horizontal" Spacing="4">
@@ -18,9 +19,11 @@
                 </StackPanel>
             </ToggleButton>
             <Button x:Name="PlayBtn" Content="&#x25B6; Play" Click="PlayBtn_Click"
+                    AutomationProperties.Name="Play replay"
                     Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}"
                     CornerRadius="6" Padding="8,4" MinWidth="0" FontSize="11"/>
             <Button x:Name="ClearBtn" Content="Clear" Click="ClearBtn_Click"
+                    AutomationProperties.Name="Clear replay"
                     Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}"
                     CornerRadius="6" Padding="8,4" MinWidth="0" FontSize="11"/>
         </StackPanel>

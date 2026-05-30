@@ -169,7 +169,7 @@ public class SignalScorerTests
     [TestMethod]
     public void ProcessWalk_WithBuildSlug_CommitSignalGoesToSlugProject()
     {
-        _scorer.ProcessWalk("I want to build and commit this. [BUILD: cool-slug]", 1, DefaultConfig(), out var slug);
+        _scorer.ProcessWalk("I want to build and commit this. [BUILD: cool-slug]", 1, DefaultConfig(), out _);
 
         var board = _scorer.LoadBoard();
         Assert.IsTrue(board.Projects.ContainsKey("cool-slug"));

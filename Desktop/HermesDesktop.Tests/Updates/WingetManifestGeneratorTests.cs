@@ -57,23 +57,23 @@ public class WingetManifestGeneratorTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(System.ArgumentException))]
     public void Render_MissingRequiredKey_Throws()
     {
         var values = AllValues().ToDictionary(kv => kv.Key, kv => kv.Value);
         values.Remove("VERSION");
 
-        WingetManifestGenerator.Render("PackageVersion: {{VERSION}}", values);
+        Assert.ThrowsException<System.ArgumentException>(
+            () => WingetManifestGenerator.Render("PackageVersion: {{VERSION}}", values));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(System.ArgumentException))]
     public void Render_EmptyRequiredKey_Throws()
     {
         var values = AllValues().ToDictionary(kv => kv.Key, kv => kv.Value);
         values["VERSION"] = "";
 
-        WingetManifestGenerator.Render("PackageVersion: {{VERSION}}", values);
+        Assert.ThrowsException<System.ArgumentException>(
+            () => WingetManifestGenerator.Render("PackageVersion: {{VERSION}}", values));
     }
 
     [TestMethod]

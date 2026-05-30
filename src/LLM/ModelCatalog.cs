@@ -1,7 +1,7 @@
 namespace Hermes.Agent.LLM;
 
 /// <summary>
-/// Static model catalog matching the official Hermes Agent Python models.py
+/// Static model catalog matching the upstream Python models.py
 /// and model_metadata.py. Provides provider-to-model lists with context lengths.
 /// </summary>
 public static class ModelCatalog

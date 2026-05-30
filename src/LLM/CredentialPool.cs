@@ -3,7 +3,7 @@ namespace Hermes.Agent.LLM;
 /// <summary>
 /// Manages multiple API keys for a provider with thread-safe least-used selection
 /// and automatic rotation on 401 failures.
-/// Matches the official Hermes Agent credential_pool.py behavior.
+/// Matches the upstream Python credential_pool.py behavior.
 /// </summary>
 public sealed class CredentialPool
 {

@@ -2,7 +2,7 @@
 
 **Source**: Reference architecture analysis
 **Date**: 2026-04-03
-**Purpose**: Capture session persistence, crash recovery, and lossless context switching for Hermes.C#
+**Purpose**: Capture session persistence, crash recovery, and lossless context switching for Hermes Desktop.
 
 ---
 
@@ -147,7 +147,7 @@ function removeLastFromHistory() {
 }
 ```
 
-### Implementation for Hermes.C#
+### Implementation for Hermes Desktop
 ```csharp
 public sealed class HistoryManager
 {
@@ -272,7 +272,7 @@ type CompactBoundaryMessage = {
 }
 ```
 
-### Implementation for Hermes.C#
+### Implementation for Hermes Desktop
 ```csharp
 public sealed class AutoCompactManager
 {
@@ -384,7 +384,7 @@ async function autoDreamLoop() {
 }
 ```
 
-### Implementation for Hermes.C#
+### Implementation for Hermes Desktop
 ```csharp
 public sealed class AutoDreamService : BackgroundService
 {
@@ -483,7 +483,7 @@ Continuously-running proactive assistant that observes development environment a
 - **Observation mode** - Watches user work patterns
 - **Memory extraction** - Automatically creates memory files
 
-### Implementation for Hermes.C#
+### Implementation for Hermes Desktop
 ```csharp
 public sealed class KairosService : BackgroundService
 {
@@ -684,7 +684,7 @@ process.on('SIGTERM', () => {
 
 ---
 
-## 8. Implementation Checklist for Hermes.C#
+## 8. Implementation Checklist for Hermes Desktop
 
 ### Phase 1: Basic Persistence ✅
 - [x] Transcript file format (JSONL)

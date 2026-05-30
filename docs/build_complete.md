@@ -1,4 +1,4 @@
-# 🎉 Hermes.C# Build Complete!
+# Hermes Desktop Build Complete
 
 **Date**: 2026-04-03  
 **Status**: ✅ **BUILD SUCCESSFUL**
@@ -138,7 +138,7 @@
 ## 📁 File Structure
 
 ```
-Hermes.CS/src/
+Hermes-Desktop/src/
 ├── Core/                    # Foundation
 │   ├── Agent.cs            # ✅ Main agent loop
 │   ├── Models.cs           # ✅ Message, Session, ToolResult
@@ -181,7 +181,7 @@ Hermes.CS/src/
 ## 🎮 Try It Out
 
 ```bash
-cd Hermes.CS\src
+cd Hermes-Desktop\src
 
 # Build
 dotnet build
@@ -201,7 +201,7 @@ dotnet run -- list
 ## 🏆 What Makes This Different
 
 **Other agents**: Tools you use  
-**Hermes.C#**: Teammate you work with
+**Hermes Desktop**: Teammate you work with
 
 ### Implemented Differentiators:
 1. ✅ **Remembers you** (Persistent Memory)

@@ -81,11 +81,11 @@ public class SkillToggleTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(SkillNotFoundException))]
     public void SetEnabled_UnknownSkill_ThrowsSkillNotFound()
     {
         var manager = NewManager();
-        manager.SetEnabled("ghost", false);
+
+        Assert.ThrowsException<SkillNotFoundException>(() => manager.SetEnabled("ghost", false));
     }
 
     [TestMethod]
@@ -117,13 +117,13 @@ public class SkillToggleTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(SkillDisabledException))]
     public async Task InvokeSkillAsync_DisabledSkill_ThrowsSkillDisabled()
     {
         var manager = NewManager();
         manager.SetEnabled("alpha", false);
 
-        await manager.InvokeSkillAsync("alpha", "hello", CancellationToken.None);
+        await Assert.ThrowsExceptionAsync<SkillDisabledException>(
+            () => manager.InvokeSkillAsync("alpha", "hello", CancellationToken.None));
     }
 
     [TestMethod]

@@ -1,7 +1,7 @@
 namespace Hermes.Agent.Tools;
 
 /// <summary>
-/// Simple unified diff utility matching the official Hermes Agent file_operations.py _unified_diff.
+/// Simple unified diff utility matching the upstream Python file_operations.py _unified_diff.
 /// Takes old and new content, produces a unified diff string showing added/removed lines.
 /// </summary>
 public static class DiffHelper

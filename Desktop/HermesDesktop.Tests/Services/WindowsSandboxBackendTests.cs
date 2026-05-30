@@ -11,7 +11,7 @@ public sealed class WindowsSandboxBackendTests
     {
         var xml = WindowsSandboxBackend.BuildSandboxConfiguration(
             @"C:\Temp\Hermes&Control",
-            @"C:\Repos\Hermes.CS",
+            @"C:\Repos\HermesDesktop",
             readOnlyWorkspace: true,
             networking: false,
             vgpu: false);

@@ -610,7 +610,7 @@
     <value>清除桌面聊天对话</value>
   </data>
   <data name="ChatPageAgentTitle.Text" xml:space="preserve">
-    <value>Hermes 智能体</value>
+    <value>Hermes Desktop</value>
   </data>
   <data name="ChatReasoningHeaderLabel.Text" xml:space="preserve">
     <value>推理</value>

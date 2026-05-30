@@ -27,7 +27,7 @@ Console.CancelKeyPress += cancelHandler;
 
 try
 {
-    var rootCommand = new RootCommand("Hermes.C# AI Agent CLI");
+    var rootCommand = new RootCommand("Hermes Desktop AI Agent CLI");
     var messageArgument = new Argument<string>("message")
     {
         Description = "Message to send",

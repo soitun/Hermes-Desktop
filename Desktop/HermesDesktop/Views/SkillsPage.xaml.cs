@@ -265,7 +265,11 @@ public sealed partial class SkillsPage : Page
         ShowStatus("Installing...", isError: false);
         try
         {
-            var result = await Hub.InstallAsync(name, url, CancellationToken.None);
+            var downloadUrl = await ResolveSkillDownloadUrlAsync(name, url);
+            if (downloadUrl is null)
+                return;
+
+            var result = await Hub.InstallAsync(name, downloadUrl, CancellationToken.None);
             if (result.Success)
             {
                 ShowStatus(string.Format(StringResources.GetString("SkillsInstallSuccessFormat"), result.Skill?.Name ?? name),
@@ -289,6 +293,69 @@ public sealed partial class SkillsPage : Page
             InstallButton.IsEnabled = true;
             UpdateQuarantineBadge();
         }
+    }
+
+    private async Task<string?> ResolveSkillDownloadUrlAsync(string name, string source)
+    {
+        if (TryConvertGitHubBlobUrl(source, out var rawUrl))
+            return rawUrl;
+
+        if (IsDirectSkillUrl(source))
+            return source;
+
+        if (!LooksLikeRepositorySource(source))
+            return source;
+
+        ShowStatus($"Searching {source} for {name}...", isError: false);
+        var remote = await Hub.SearchGitHubAsync(source, CancellationToken.None);
+        var match = remote.FirstOrDefault(r =>
+            !r.IsCategory &&
+            !string.IsNullOrWhiteSpace(r.DownloadUrl) &&
+            r.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        if (match?.DownloadUrl is null)
+        {
+            ShowStatus($"Could not find a skill named {name} in {source}. Use Browse to choose one.", isError: true);
+            return null;
+        }
+
+        return match.DownloadUrl;
+    }
+
+    private static bool IsDirectSkillUrl(string source)
+    {
+        if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
+            return false;
+
+        return uri.Host.Contains("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase) ||
+               uri.AbsolutePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool LooksLikeRepositorySource(string source)
+    {
+        if (Uri.TryCreate(source, UriKind.Absolute, out var uri))
+            return uri.Host.Contains("github.com", StringComparison.OrdinalIgnoreCase);
+
+        return source.Split('/', StringSplitOptions.RemoveEmptyEntries).Length >= 2 &&
+               !source.Contains("://", StringComparison.Ordinal);
+    }
+
+    private static bool TryConvertGitHubBlobUrl(string source, out string rawUrl)
+    {
+        rawUrl = "";
+        if (!Uri.TryCreate(source, UriKind.Absolute, out var uri) ||
+            !uri.Host.Contains("github.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 5 || !parts[2].Equals("blob", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var rest = string.Join("/", parts.Skip(4));
+        rawUrl = $"https://raw.githubusercontent.com/{parts[0]}/{parts[1]}/{parts[3]}/{rest}";
+        return true;
     }
 
     private async void BrowseHub_Click(object sender, RoutedEventArgs e)

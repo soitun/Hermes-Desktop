@@ -137,6 +137,7 @@ public sealed partial class DashboardPage : Page
         var transcripts = App.Services?.GetService<TranscriptStore>();
         var sessionCount = transcripts?.GetAllSessionIds().Count ?? 0;
         SessionCountText.Text = sessionCount.ToString();
+        ClearChatsButton.IsEnabled = sessionCount > 0;
 
         // Tool count
         var agent = App.Services?.GetService<Agent>();
@@ -232,6 +233,7 @@ public sealed partial class DashboardPage : Page
         if (transcripts is null) return;
 
         var sessionIds = transcripts.GetAllSessionIds();
+        ClearChatsButton.IsEnabled = sessionIds.Count > 0;
         var items = new List<SessionDisplayItem>();
 
         foreach (var id in sessionIds.TakeLast(15).Reverse())
@@ -361,9 +363,38 @@ public sealed partial class DashboardPage : Page
 
     private void LaunchHermesChat_Click(object sender, RoutedEventArgs e)
     {
-        // Navigate to Chat page
-        if (this.Frame is not null)
-            this.Frame.Navigate(typeof(ChatPage));
+        if (App.Current is App app && app.MainWindow is { } window)
+            window.NavigateToTag("chat");
+        else if (Frame is not null)
+            Frame.Navigate(typeof(ChatPage));
+    }
+
+    private async void ClearChats_Click(object sender, RoutedEventArgs e)
+    {
+        var transcripts = App.Services?.GetService<TranscriptStore>();
+        if (transcripts is null || transcripts.GetAllSessionIds().Count == 0)
+            return;
+
+        var dialog = new ContentDialog
+        {
+            Title = "Clear all chats?",
+            Content = "This deletes every saved chat transcript and replay activity from this device.",
+            PrimaryButtonText = "Clear chats",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary)
+            return;
+
+        await transcripts.DeleteAllSessionsAsync(CancellationToken.None);
+        App.Services?.GetService<HermesChatService>()?.ResetConversation();
+
+        LoadStats();
+        await LoadRecentSessionsAsync();
+        LoadInsights();
     }
 
     private void OpenLogs_Click(object sender, RoutedEventArgs e) => HermesEnvironment.OpenLogs();

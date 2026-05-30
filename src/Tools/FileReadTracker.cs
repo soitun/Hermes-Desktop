@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 
 /// <summary>
 /// Tracks file read timestamps to detect stale file content.
-/// Matches the official Hermes Agent file_tools.py _read_tracker logic.
+/// Matches the upstream Python file_tools.py _read_tracker logic.
 /// Thread-safe static tracker shared across all file tools.
 /// </summary>
 public static class FileReadTracker

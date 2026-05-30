@@ -108,7 +108,7 @@ public sealed class InMemoryCronScheduler : ICronScheduler
             if (delay > 0)
             {
                 var timer = new System.Timers.Timer(delay);
-                timer.Elapsed += async (s, e) =>
+                timer.Elapsed += (s, e) =>
                 {
                     timer.Dispose();
                     _timers.Remove(task.Id);

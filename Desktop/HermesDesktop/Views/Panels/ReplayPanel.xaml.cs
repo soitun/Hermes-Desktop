@@ -173,7 +173,10 @@ public sealed partial class ReplayPanel : UserControl
         {
             await PlaybackAsync(_playCts.Token);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            // Playback cancellation is expected when the user stops replay.
+        }
         finally
         {
             StopPlayback();

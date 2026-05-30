@@ -113,30 +113,30 @@ public class SavedModelStoreTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
     public async Task Upsert_EmptyName_ThrowsArgument()
     {
         var store = NewStore();
         var bad = SavedModelProfile.Create("", "openai", "gpt-5.4");
-        await store.UpsertAsync(bad);
+
+        await Assert.ThrowsExceptionAsync<ArgumentException>(() => store.UpsertAsync(bad));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
     public async Task Upsert_EmptyProvider_ThrowsArgument()
     {
         var store = NewStore();
         var bad = SavedModelProfile.Create("X", "", "gpt-5.4");
-        await store.UpsertAsync(bad);
+
+        await Assert.ThrowsExceptionAsync<ArgumentException>(() => store.UpsertAsync(bad));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
     public async Task Upsert_EmptyModelId_ThrowsArgument()
     {
         var store = NewStore();
         var bad = SavedModelProfile.Create("X", "openai", "");
-        await store.UpsertAsync(bad);
+
+        await Assert.ThrowsExceptionAsync<ArgumentException>(() => store.UpsertAsync(bad));
     }
 
     [TestMethod]

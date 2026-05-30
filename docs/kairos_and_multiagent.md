@@ -2,7 +2,7 @@
 
 **Source**: Reference architecture analysis
 **Date**: 2026-04-03
-**Purpose**: Complete specification of KAIROS proactive mode and multi-agent orchestration for Hermes.C#
+**Purpose**: Complete specification of KAIROS proactive mode and multi-agent orchestration for Hermes Desktop.
 
 ---
 
@@ -716,7 +716,7 @@ type TaskOutputOutput = {
 
 ---
 
-## Part 3: Implementation for Hermes.C#
+## Part 3: Implementation for Hermes Desktop
 
 ### KAIROS Service
 

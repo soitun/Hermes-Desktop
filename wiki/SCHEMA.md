@@ -7,9 +7,9 @@ updated: 2026-04-09
 sources: []
 ---
 
-# Hermes.CS Wiki Schema
+# Hermes Desktop Wiki Schema
 
-Domain: Hermes.CS -- Native Windows AI Agent built in C# / WinUI 3.
+Domain: Hermes Desktop -- native Windows AI agent built in C# / WinUI 3.
 Ported from NousResearch/hermes-agent (Python) with native desktop extensions.
 
 ## Tag Taxonomy

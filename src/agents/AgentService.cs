@@ -464,12 +464,14 @@ public sealed class TeamManager
         return JsonSerializer.Deserialize<Team>(json, JsonOpts) ?? throw new TeamNotFoundException(teamName);
     }
 
-    public async Task<List<string>> ListTeamsAsync(CancellationToken ct)
+    public Task<List<string>> ListTeamsAsync(CancellationToken ct)
     {
-        if (!Directory.Exists(_teamsDir)) return new List<string>();
-        return Directory.EnumerateFiles(_teamsDir, "*.json")
+        ct.ThrowIfCancellationRequested();
+        if (!Directory.Exists(_teamsDir)) return Task.FromResult(new List<string>());
+        var teams = Directory.EnumerateFiles(_teamsDir, "*.json")
             .Select(f => Path.GetFileNameWithoutExtension(f))
             .ToList();
+        return Task.FromResult(teams);
     }
 
     private async Task SaveTeamAsync(Team team, CancellationToken ct)
@@ -478,7 +480,7 @@ public sealed class TeamManager
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(team, JsonOpts), ct);
     }
 
-    private async Task CleanupTeamWorktreesAsync(Team team)
+    private Task CleanupTeamWorktreesAsync(Team team)
     {
         foreach (var m in team.Members.Where(m => m.WorktreePath is not null && Directory.Exists(m.WorktreePath)))
         {
@@ -495,6 +497,7 @@ public sealed class TeamManager
             try { Directory.Delete(fullPath, true); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to remove worktree {Path}", m.WorktreePath); }
         }
+        return Task.CompletedTask;
     }
 
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
@@ -554,10 +557,12 @@ public sealed class MailboxService
         return mailbox.Messages.Count(m => !m.Read);
     }
 
-    public async Task ClearMailboxAsync(string agentName, CancellationToken ct)
+    public Task ClearMailboxAsync(string agentName, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         var path = GetMailboxPath(agentName);
         if (File.Exists(path)) File.Delete(path);
+        return Task.CompletedTask;
     }
 
     /// <summary>Poll-based subscription — checks for new messages at interval.</summary>

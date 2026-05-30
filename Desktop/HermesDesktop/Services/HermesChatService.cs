@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace HermesDesktop.Services;
 
 /// <summary>
-/// Pure C# chat service — bridges the WinUI frontend to the Hermes Agent core.
+/// Pure C# chat service that bridges the WinUI frontend to the Hermes runtime core.
 /// No Python sidecar. Direct in-process agent execution.
 /// </summary>
 internal sealed class HermesChatService : IDisposable
@@ -50,7 +50,7 @@ internal sealed class HermesChatService : IDisposable
 
     public string? CurrentSessionId => _currentSession?.Id;
     public Session? CurrentSession => _currentSession;
-    public PermissionMode CurrentPermissionMode { get; private set; } = PermissionMode.Default;
+    public PermissionMode CurrentPermissionMode { get; private set; }
 
     // ── Health Check ──
 
@@ -158,7 +158,7 @@ internal sealed class HermesChatService : IDisposable
                     case Hermes.Agent.LLM.StreamEvent.TokenDelta td:
                         // Tool-calling status messages (e.g. "[Calling tool: bash]") are
                         // informational — show in UI but don't accumulate into the saved response
-                        if (td.Text.StartsWith("\n[Calling tool:") && td.Text.TrimEnd().EndsWith("]"))
+                        if (td.Text.StartsWith("\n[Calling tool:", StringComparison.Ordinal) && td.Text.TrimEnd().EndsWith(']'))
                         {
                             yield return new ChatRuntimeEvent.ToolStatus(td.Text.Trim());
                         }

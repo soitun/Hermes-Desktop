@@ -10,8 +10,6 @@ namespace HermesDesktop.Controls;
 
 public sealed partial class BuddyAvatarView : UserControl
 {
-    private const double CanvasSize = 260;
-
     public BuddyAvatarView()
     {
         InitializeComponent();

@@ -41,7 +41,7 @@ internal static class DiagnosticsReportBuilder
             ?? "unknown";
         sb.AppendLine("App: Hermes Desktop");
         sb.AppendLine($"Version: {ver}");
-        sb.AppendLine(FormattableString.Invariant($"Timestamp (UTC): {DateTimeOffset.UtcNow:O}"));
+        sb.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Timestamp (UTC): {DateTimeOffset.UtcNow:O}"));
     }
 
     private static void AppendPaths(StringBuilder sb)

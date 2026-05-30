@@ -13,7 +13,7 @@
     mc:Ignorable="d">
     <!-- Enter sends, Shift+Enter for newline (handled in KeyDown) -->
 
-    <Grid x:Name="MainGrid" Padding="20,12,24,20" ColumnSpacing="14" RowSpacing="14">
+    <Grid x:Name="MainGrid" Padding="24,16,24,20" ColumnSpacing="16" RowSpacing="14">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="300"/>
             <ColumnDefinition Width="Auto"/>
@@ -33,7 +33,11 @@
 
             <StackPanel Spacing="4">
                 <TextBlock x:Uid="ChatPageAgentTitle" FontSize="22" FontWeight="SemiBold" />
-                <StackPanel Orientation="Horizontal" Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border x:Name="ConnectionStatusDot"
+                            Width="8" Height="8" CornerRadius="4"
+                            Background="{StaticResource ConnectionOfflineBrush}"
+                            VerticalAlignment="Center" />
                     <TextBlock x:Name="ConnectionStateText" Style="{StaticResource BodySecondaryTextStyle}" />
                 </StackPanel>
             </StackPanel>
@@ -86,14 +90,21 @@
                 </InfoBar>
 
                 <!-- Messages -->
-                <ListView x:Name="MessagesList" Grid.Row="1" Padding="18" Background="Transparent" BorderThickness="0"
+                <ListView x:Name="MessagesList" Grid.Row="1" Padding="20,18,20,12" Background="Transparent" BorderThickness="0"
                     SelectionMode="None">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Padding" Value="0" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:ChatMessageItem">
-                            <Grid Margin="0,0,0,10">
-                                <Border MaxWidth="780" HorizontalAlignment="{x:Bind BubbleAlignment}"
+                            <Grid Margin="0,0,0,12">
+                                <Border MaxWidth="820" HorizontalAlignment="{x:Bind BubbleAlignment}"
                                     Background="{x:Bind BubbleBackground}" BorderBrush="{x:Bind BubbleBorderBrush}"
-                                    BorderThickness="1" CornerRadius="12" Padding="16,12">
+                                    BorderThickness="1" CornerRadius="8" Padding="16,12">
                                     <StackPanel Spacing="8">
                                         <TextBlock Foreground="{x:Bind LabelBrush}" Style="{StaticResource LabelTextStyle}" Text="{x:Bind AuthorLabel}" />
 
@@ -137,6 +148,7 @@
                         <Button x:Name="StopButton" x:Uid="ChatStopButton" Click="StopGeneration_Click"
                                 HorizontalAlignment="Right" VerticalAlignment="Center"
                                 Style="{StaticResource SecondaryButtonStyle}"
+                                IsEnabled="False"
                                 Padding="12,4" FontSize="12" CornerRadius="6"/>
                     </Grid>
                 </Border>
@@ -212,9 +224,9 @@
                     </Border>
 
                     <!-- Input container with rounded border -->
-                    <Border Background="{StaticResource AppInsetBrush}"
+                    <Border Background="{StaticResource AppComposerBrush}"
                             BorderBrush="{StaticResource AppStrokeBrush}"
-                            BorderThickness="1" CornerRadius="12" Padding="12,8">
+                            BorderThickness="1" CornerRadius="8" Padding="14,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -223,20 +235,21 @@
 
                             <TextBox x:Name="PromptTextBox"
                                      x:Uid="ChatPromptTextBox"
+                                     AutomationProperties.Name="Message Hermes"
                                      AcceptsReturn="True"
                                      MaxHeight="200" MinHeight="36"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Foreground="White"
+                                     Style="{StaticResource ComposerTextBoxStyle}"
                                      TextWrapping="Wrap"
                                      KeyDown="PromptTextBox_KeyDown"
                                      TextChanged="PromptTextBox_TextChanged" />
 
                             <Button x:Name="SendButton" x:Uid="ChatPageSendButton" Grid.Column="1"
+                                    AutomationProperties.Name="Send message"
                                     Click="SendPrompt_Click"
                                     VerticalAlignment="Bottom"
-                                    Background="Transparent" BorderThickness="0"
-                                    Padding="8" CornerRadius="8"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    Background="{StaticResource AppSelectedSurfaceBrush}"
+                                    BorderBrush="{StaticResource AppStrokeBrush}"
                                     IsEnabled="False">
                                 <FontIcon Glyph="&#xE724;" FontSize="18"
                                           Foreground="{StaticResource AppAccentBrush}" />
@@ -266,9 +279,9 @@
                         </Grid.ColumnDefinitions>
                         <!-- Model quick-switch -->
                         <ComboBox x:Name="ModelSwitchCombo" FontSize="11" MinWidth="160" MaxWidth="240"
-                                  MinHeight="24" Padding="6,2" CornerRadius="4"
-                                  Background="{StaticResource AppInsetBrush}"
-                                  BorderBrush="{StaticResource AppStrokeBrush}"
+                                  AutomationProperties.Name="Model switcher"
+                                  MinHeight="32"
+                                  Style="{StaticResource AppComboBoxStyle}"
                                   VerticalAlignment="Center"
                                   SelectionChanged="ModelSwitchCombo_SelectionChanged"/>
                         <!-- Permission mode -->
@@ -304,13 +317,17 @@
                 <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="8,8,8,0">
                     <StackPanel Orientation="Horizontal" Spacing="2">
                         <Button x:Name="TabSessions" x:Uid="ChatPageTabSessions" Click="PanelTab_Click" Tag="sessions"
-                                Background="Transparent" Foreground="{StaticResource AppAccentTextBrush}" FontSize="11" Padding="8,4" CornerRadius="6" MinWidth="0"/>
+                                AutomationProperties.Name="Sessions panel"
+                                Style="{StaticResource PanelTabButtonStyle}"/>
                         <Button x:Name="TabFiles" x:Uid="ChatPageTabFiles" Click="PanelTab_Click" Tag="files"
-                                Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="11" Padding="8,4" CornerRadius="6" MinWidth="0"/>
+                                AutomationProperties.Name="Files panel"
+                                Style="{StaticResource PanelTabButtonStyle}"/>
                         <Button x:Name="TabTasks" x:Uid="ChatPageTabTasks" Click="PanelTab_Click" Tag="tasks"
-                                Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="11" Padding="8,4" CornerRadius="6" MinWidth="0"/>
+                                AutomationProperties.Name="Tasks panel"
+                                Style="{StaticResource PanelTabButtonStyle}"/>
                         <Button x:Name="TabReplay" x:Uid="ChatPageTabReplay" Click="PanelTab_Click" Tag="replay"
-                                Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="11" Padding="8,4" CornerRadius="6" MinWidth="0"/>
+                                AutomationProperties.Name="Replay panel"
+                                Style="{StaticResource PanelTabButtonStyle}"/>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -335,8 +352,8 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{StaticResource AppTextSecondaryBrush}"/>
                         <Button x:Name="CopySessionIdButton" x:Uid="ChatCopySessionIdButton" Grid.Column="1" Content="&#xE8C8;" FontFamily="Segoe MDL2 Assets"
-                                FontSize="12" MinWidth="32" Padding="6,4" CornerRadius="6"
-                                Background="Transparent" BorderBrush="{StaticResource AppSubtleStrokeBrush}"
+                                AutomationProperties.Name="Copy session ID"
+                                FontSize="12" Style="{StaticResource IconButtonStyle}" Padding="6,4"
                                 Click="CopySessionId_Click" IsEnabled="False"/>
                     </Grid>
                 </Border>

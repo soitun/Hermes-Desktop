@@ -719,6 +719,7 @@ This file is a living document about the human I work with. It helps me provide 
         }
         catch (OperationCanceledException)
         {
+            // Update checks can be canceled while the settings page is unloading.
         }
         catch (Exception ex)
         {

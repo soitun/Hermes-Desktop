@@ -19,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.ApplicationModel.DataTransfer;
 
@@ -70,6 +71,19 @@ public sealed partial class ChatPage : Page
 
     public ObservableCollection<ChatMessageItem> Messages { get; } = new();
 
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (!_initialized) return;
+
+        if (_chatService.CurrentSessionId is null && Messages.Count > 0)
+            ResetChatSurface();
+
+        UpdateSessionFooterLabel();
+        UpdateSessionFooterCopyButton();
+        await RefreshSessionPanelAsync();
+    }
+
     // ── Lifecycle ──
 
     private async void OnPageLoaded(object sender, RoutedEventArgs e)
@@ -81,6 +95,7 @@ public sealed partial class ChatPage : Page
         UpdateSessionFooterLabel();
         UpdateSessionFooterCopyButton();
         SetPermissionModeUi(_chatService.CurrentPermissionMode, applyToService: false);
+        ShowPanel("sessions");
 
         // Wire session panel click → load session into chat
         SessionPanelView.SessionSelected += OnSessionSelected;
@@ -91,6 +106,7 @@ public sealed partial class ChatPage : Page
             if (_chatService.CurrentSessionId == sessionId)
                 NewChat_Click(this, new RoutedEventArgs());
         };
+        SessionPanelView.SessionsCleared += () => NewChat_Click(this, new RoutedEventArgs());
 
         // Wire agent activity tracking → replay panel + screen capture
         _agent.ActivityEntryAdded += async entry =>
@@ -334,6 +350,7 @@ public sealed partial class ChatPage : Page
         if (prompt.StartsWith("/", StringComparison.Ordinal))
         {
             await HandleSlashCommandAsync(prompt);
+            await RefreshSessionPanelAsync();
             return;
         }
 
@@ -341,6 +358,7 @@ public sealed partial class ChatPage : Page
         if (_onboarding != OnboardingState.None)
         {
             await HandleOnboardingInputAsync(prompt);
+            await RefreshSessionPanelAsync();
             return;
         }
 
@@ -493,6 +511,7 @@ public sealed partial class ChatPage : Page
             SetBusy(false);
             UpdateSessionFooterLabel();
             UpdateSessionFooterCopyButton();
+            await RefreshSessionPanelAsync();
             PromptTextBox.Focus(FocusState.Programmatic);
         }
     }
@@ -551,6 +570,13 @@ public sealed partial class ChatPage : Page
     {
         HideChatError();
         _chatService.ResetConversation();
+        ResetChatSurface();
+        await RefreshConnectionStatusAsync();
+        await RefreshSessionPanelAsync();
+    }
+
+    private void ResetChatSurface()
+    {
         _agent.ClearActivityLog();
         ReplayPanelView.Clear();
         _sessionRecorder.StopRecording();
@@ -564,8 +590,6 @@ public sealed partial class ChatPage : Page
             ShowOnboarding();
         else
             AppendWelcomeMessage();
-
-        await RefreshConnectionStatusAsync();
     }
 
     // ── Permission Mode ──
@@ -670,6 +694,13 @@ public sealed partial class ChatPage : Page
             _ => ResourceLoader.GetString("StatusOffline"),
         };
 
+        ConnectionStatusDot.Background = snapshot.ConnectionState switch
+        {
+            RuntimeConnectionState.Connected => GetBrush("ConnectionOnlineBrush"),
+            RuntimeConnectionState.Checking => GetBrush("StatusWarningBrush"),
+            _ => GetBrush("ConnectionOfflineBrush"),
+        };
+
         ConnectionStateText.Text = $"{statusText} | {snapshot.DisplayProvider} | {snapshot.DisplayModel}";
     }
 
@@ -702,8 +733,21 @@ public sealed partial class ChatPage : Page
     {
         ThinkingIndicator.Opacity = show ? 1.0 : 0.0;
         ThinkingRing.IsActive = show;
+        StopButton.IsEnabled = show;
         if (label is not null)
             ThinkingText.Text = label;
+    }
+
+    private async Task RefreshSessionPanelAsync()
+    {
+        try
+        {
+            await SessionPanelView.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed refreshing the session panel.");
+        }
     }
 
     private void AppendUserMessage(string text) =>
@@ -720,25 +764,14 @@ public sealed partial class ChatPage : Page
 
     private void AppendWelcomeMessage()
     {
-        var caduceus =
-            "            ⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀\n" +
-            "            ⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀\n" +
-            "       ⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀\n" +
-            "       ⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉\n" +
-            "            ⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃\n" +
-            "            ⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿\n" +
-            "            ⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁\n\n" +
-            "         H E R M E S   A G E N T\n\n" +
-            "  Ready. Type a message or /help for commands.";
+        var welcome =
+            "        H E R M E S   D E S K T O P\n\n" +
+            "  Native Windows workspace for local AI work.\n" +
+            "  Chat, sessions, files, tasks, skills, memory, and replay live here.\n\n" +
+            "  Type a message or /help to start.";
 
-        AppendSystemMessage(caduceus);
+        AddMessage(ResourceLoader.GetString("ChatSystemLabel"), welcome, HorizontalAlignment.Center,
+            _systemBackgroundBrush, _systemBorderBrush, _secondaryLabelBrush, ChatMessageType.System);
     }
 
     // ── First-Run Onboarding ──
@@ -792,7 +825,7 @@ public sealed partial class ChatPage : Page
 
 User's preferences: {input}
 
-Write the SOUL.md content now (markdown format, start with # Hermes Agent Identity):";
+Write the SOUL.md content now (markdown format, start with # Hermes Desktop Identity):";
 
                     var reply = await Task.Run(() => _chatService.SendAsync(prompt, CancellationToken.None));
                     ShowThinking(false);
@@ -979,25 +1012,47 @@ Write the USER.md content now (markdown format, start with # User Profile):";
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
 
+        ShowPanel(tag);
+    }
+
+    private void ShowPanel(string tag)
+    {
         SessionPanelView.Visibility = Visibility.Collapsed;
         FileBrowserPanelView.Visibility = Visibility.Collapsed;
         TaskPanelView.Visibility = Visibility.Collapsed;
         ReplayPanelView.Visibility = Visibility.Collapsed;
 
-        var accent = GetBrush("AppAccentTextBrush");
-        var muted = GetBrush("AppTextSecondaryBrush");
-        TabSessions.Foreground = muted;
-        TabFiles.Foreground = muted;
-        TabTasks.Foreground = muted;
-        TabReplay.Foreground = muted;
+        SetPanelTabVisual(TabSessions, false);
+        SetPanelTabVisual(TabFiles, false);
+        SetPanelTabVisual(TabTasks, false);
+        SetPanelTabVisual(TabReplay, false);
 
         switch (tag)
         {
-            case "sessions": SessionPanelView.Visibility = Visibility.Visible; TabSessions.Foreground = accent; break;
-            case "files": FileBrowserPanelView.Visibility = Visibility.Visible; TabFiles.Foreground = accent; break;
-            case "tasks": TaskPanelView.Visibility = Visibility.Visible; TabTasks.Foreground = accent; break;
-            case "replay": ReplayPanelView.Visibility = Visibility.Visible; TabReplay.Foreground = accent; break;
+            case "sessions":
+                SessionPanelView.Visibility = Visibility.Visible;
+                SetPanelTabVisual(TabSessions, true);
+                break;
+            case "files":
+                FileBrowserPanelView.Visibility = Visibility.Visible;
+                SetPanelTabVisual(TabFiles, true);
+                break;
+            case "tasks":
+                TaskPanelView.Visibility = Visibility.Visible;
+                SetPanelTabVisual(TabTasks, true);
+                break;
+            case "replay":
+                ReplayPanelView.Visibility = Visibility.Visible;
+                SetPanelTabVisual(TabReplay, true);
+                break;
         }
+    }
+
+    private void SetPanelTabVisual(Button tab, bool selected)
+    {
+        tab.Background = GetBrush(selected ? "AppSelectedSurfaceBrush" : "AppTransparentBrush");
+        tab.BorderBrush = GetBrush(selected ? "AppAccentBrush" : "AppSubtleStrokeBrush");
+        tab.Foreground = GetBrush(selected ? "AppAccentTextBrush" : "AppTextSecondaryBrush");
     }
 
     private static Brush GetBrush(string key) => (Brush)Application.Current.Resources[key];

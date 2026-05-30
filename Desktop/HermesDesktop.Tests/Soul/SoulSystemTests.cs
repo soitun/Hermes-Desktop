@@ -24,7 +24,7 @@ public sealed class SoulSystemTests
             var user = await service.LoadFileAsync(SoulFileType.User);
 
             StringAssert.Contains(soul, "<!-- UNCONFIGURED -->");
-            StringAssert.Contains(soul, "# Hermes Agent Identity");
+            StringAssert.Contains(soul, "# Hermes Desktop Identity");
             StringAssert.Contains(user, "<!-- UNCONFIGURED -->");
             Assert.IsTrue(service.IsFirstRun());
         }

@@ -19,4 +19,4 @@ Wiki created from codebase analysis session. 23 pages written covering:
 - 3 concept pages (version-history, forensic-invariants, upstream-gap-analysis)
 - 3 meta pages (SCHEMA.md, index.md, log.md)
 
-All content derived from reading actual source files in the Hermes.CS repository. Method signatures, line numbers, and architectural details verified against current code state on branch `claude/task-brief-schema-O9tfN`.
+All content derived from reading actual source files in the Hermes Desktop repository. Method signatures, line numbers, and architectural details were verified against the current code state at the time of the wiki pass.

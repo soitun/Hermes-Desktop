@@ -610,7 +610,7 @@
     <value>Clear the desktop chat conversation</value>
   </data>
   <data name="ChatPageAgentTitle.Text" xml:space="preserve">
-    <value>Hermes Agent</value>
+    <value>Hermes Desktop</value>
   </data>
   <data name="ChatReasoningHeaderLabel.Text" xml:space="preserve">
     <value>Reasoning</value>
@@ -805,7 +805,7 @@
     <value>Enter a skill name (lowercase letters, digits, dashes).</value>
   </data>
   <data name="SkillsInstallUrlRequired" xml:space="preserve">
-    <value>Enter a raw SKILL.md URL.</value>
+    <value>Enter a raw SKILL.md URL or GitHub repo path.</value>
   </data>
   <data name="SkillsQuarantineBadgeFormat" xml:space="preserve">
     <value>{0} quarantined</value>

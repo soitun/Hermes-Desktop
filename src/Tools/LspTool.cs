@@ -486,7 +486,7 @@ public sealed class LspClient : IAsyncDisposable
         return new LspSymbol(name, kind, line, children);
     }
     
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         try
         {
@@ -497,6 +497,7 @@ public sealed class LspClient : IAsyncDisposable
             System.Diagnostics.Debug.WriteLine($"LspTool process kill failed during dispose: {ex}");
         }
         _process.Dispose();
+        return ValueTask.CompletedTask;
     }
 }
 

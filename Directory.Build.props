@@ -12,6 +12,9 @@
 <Project>
 
   <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <HermesProductVersion>2.5.9</HermesProductVersion>
+
     <Authors>VyreVault Studios</Authors>
     <Company>VyreVault Studios</Company>
     <Copyright>Copyright © VyreVault Studios. MIT licensed.</Copyright>
@@ -27,5 +30,11 @@
     <HermesWingetMoniker>hermes</HermesWingetMoniker>
     <HermesWingetShortDescription>Hermes Desktop — local-first agent shell for Windows (WinUI 3).</HermesWingetShortDescription>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Analyzer" Version="3.0.98" PrivateAssets="all" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0" PrivateAssets="all" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.27.0.140913" PrivateAssets="all" />
+  </ItemGroup>
 
 </Project>

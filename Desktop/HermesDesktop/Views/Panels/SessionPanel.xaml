@@ -10,11 +10,40 @@
     <Grid RowDefinitions="Auto,Auto,*">
         <TextBlock Text="Sessions" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8"/>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
-            <TextBox x:Name="SearchBox" PlaceholderText="Search sessions..." Width="160" FontSize="12"/>
-            <Button x:Name="NewSessionBtn" Content="+" Click="NewSession_Click" CornerRadius="6" Padding="8,4"
-                    Background="{StaticResource AppAccentGradientBrush}" Foreground="#16110D" ToolTipService.ToolTip="New session"/>
-        </StackPanel>
+        <Grid Grid.Row="1" ColumnSpacing="8" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchBox"
+                     AutomationProperties.Name="Search sessions"
+                     PlaceholderText="Search sessions..."
+                     FontSize="12"
+                     Style="{StaticResource AppTextBoxStyle}"
+                     TextChanged="SearchBox_TextChanged"/>
+            <Button x:Name="NewSessionBtn"
+                    Grid.Column="1"
+                    AutomationProperties.Name="New session"
+                    Click="NewSession_Click"
+                    Style="{StaticResource IconButtonStyle}"
+                    Background="{StaticResource AppAccentGradientBrush}"
+                    BorderBrush="{StaticResource AppAccentDarkBrush}"
+                    Foreground="{StaticResource AppOnAccentTextBrush}"
+                    ToolTipService.ToolTip="New session">
+                <FontIcon Glyph="&#xE710;" FontSize="12" />
+            </Button>
+            <Button x:Name="ClearChatsBtn"
+                    Grid.Column="2"
+                    AutomationProperties.Name="Clear all chats"
+                    Click="ClearChats_Click"
+                    Style="{StaticResource IconButtonStyle}"
+                    BorderBrush="{StaticResource StatusErrorBrush}"
+                    Foreground="{StaticResource StatusErrorBrush}"
+                    ToolTipService.ToolTip="Clear all chats">
+                <FontIcon Glyph="&#xE74D;" FontSize="12" />
+            </Button>
+        </Grid>
 
         <TextBlock Grid.Row="2" x:Name="EmptyState" Visibility="Collapsed"
                    Text="No conversations yet.&#x0a;Start chatting to create your first session."
@@ -26,7 +55,7 @@
                   Background="Transparent">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Margin="0,4">
+                    <Grid Margin="0,4" Padding="6,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -40,8 +69,9 @@
                             </StackPanel>
                         </StackPanel>
                         <Button Grid.Column="1" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                AutomationProperties.Name="Delete session"
                                 Click="DeleteSession_Click" Tag="{Binding Id}"
-                                Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}"
+                                Style="{StaticResource IconButtonStyle}"
                                 BorderThickness="0" Padding="6,4" VerticalAlignment="Center"
                                 ToolTipService.ToolTip="Delete session"/>
                     </Grid>
